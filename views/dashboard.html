@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="/images/Itacorda_Logo.PNG" type="image/png">
+  <title>Portal de Processos</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.4/mammoth.browser.min.js"></script>
+</head>
+<body>
+
+  <header>
+    <h2 class="header-logo">
+      <img src="/images/Itacorda_Logo.PNG" alt="Itacorda Logo">
+    </h2>
+    <nav>
+      <button id="btn-novo-processo">Novo Processo</button>
+      <button id="btn-meus-processos">Meus Processos</button>
+      <a href="/logout">Sair</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="welcome">
+      <div class="welcome-text">
+        <h3>Bem-vindo(a)!</h3>
+        <p>Aqui você pode visualizar e documentar seus processos operacionais.</p>
+      </div>
+
+      <div class="search-container">
+        <input type="text" id="pesquisa" placeholder="Pesquisar processo...">
+        <button id="btn-pesquisar">Pesquisar</button>
+        <button id="btn-clear">Limpar</button>
+      </div>
+    </section>
+
+
+    <section class="resultados-busca" id="resultados-busca" style="display:none;">
+      <h3>Resultados da busca</h3>
+      <ul id="resultados-ul"></ul>
+    </section>
+
+    <section class="novo-processo" id="novo-processo" style="display:none;">
+      <h3>Novo Processo</h3>
+      <input type="text" id="titulo" placeholder="Título do processo" />
+      <div id="descricao" contenteditable="true" style="white-space: normal; line-height: 1.6; min-height: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff;"></div>
+
+      <input type="file" id="word-file" accept=".doc,.docx" />
+
+      <button id="salvar-processo"> Salvar</button>
+    </section>
+
+    <section class="meus-processos" id="meus-processos" style="display:none;">
+      <h3> Meus Processos</h3>
+      <ul id="processos-ul"></ul>
+    </section>
+
+    <section class="processos-recentes">
+      <h3> Processos Recentes</h3>
+      <ul id="recentes-ul"></ul>
+    </section>
+
+  </main>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3 id="modal-titulo"></h3>
+      <p id="modal-descricao"></p>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

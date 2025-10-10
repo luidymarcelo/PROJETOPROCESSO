@@ -1,0 +1,37 @@
+<h2>Cadastrar Processo</h2>
+<form id="formProcesso">
+  <input type="text" id="usuario" placeholder="Usuário (ex: compras01)" required>
+  <input type="text" id="titulo" placeholder="Título do processo" required>
+  <textarea id="descricao" placeholder="Descrição"></textarea>
+  <button type="submit">Salvar</button>
+</form>
+
+<h2>Lista de Processos</h2>
+<ul id="lista"></ul>
+
+<script>
+  async function carregarProcessos() {
+    const res = await fetch('/api/processos');
+    const data = await res.json();
+    const lista = document.getElementById('lista');
+    lista.innerHTML = data.map(p => `<li><b>${p.titulo}</b> - ${p.usuario}</li>`).join('');
+  }
+
+  document.getElementById('formProcesso').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const usuario = document.getElementById('usuario').value;
+    const titulo = document.getElementById('titulo').value;
+    const descricao = document.getElementById('descricao').value;
+
+    await fetch('/api/processos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, titulo, descricao })
+    });
+
+    document.getElementById('formProcesso').reset();
+    carregarProcessos();
+  });
+
+  carregarProcessos();
+</script>

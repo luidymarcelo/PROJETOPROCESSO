@@ -1,0 +1,261 @@
+/* ===============================
+   VARIÁVEIS GLOBAIS
+================================= */
+:root {
+  --cor-primaria: #004aad;
+  --cor-primaria-hover: #0066d6;
+  --cor-fundo: #f5f6fa;
+  --cor-borda: #ddd;
+  --cor-texto: #333;
+  --cor-fundo-claro: #fff;
+
+  --radius: 6px;
+  --espaco: 20px;
+  --transicao: 0.2s ease;
+  --login-width: 320px;
+  --header-height: 60px;
+}
+
+/* ===============================
+   BODY
+================================= */
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  margin: 0;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+/* ===============================
+   LOGIN
+================================= */
+.login-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(120deg, var(--cor-primaria), #007bff);
+}
+
+.login-container {
+  background: var(--cor-fundo-claro);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  text-align: center;
+  width: var(--login-width);
+}
+
+.login-container h1 {
+  margin-bottom: 20px;
+  color: var(--cor-primaria);
+  font-size: 24px;
+}
+
+.login-container input {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+.login-container button {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--cor-primaria);
+  border: none;
+  color: white;
+  border-radius: var(--radius);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color var(--transicao);
+}
+
+.login-container button:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+.footer {
+  margin-top: 15px;
+  font-size: 0.8em;
+  color: #777;
+}
+
+/* ===============================
+   CABEÇALHO
+================================= */
+header {
+  background-color: var(--cor-primaria);
+  color: white;
+  padding: 0 30px;
+  height: var(--header-height);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.header-logo img {
+  height: 40px;
+  width: auto;
+}
+
+nav a,
+nav button {
+  color: white;
+  background: none;
+  border: none;
+  margin-left: 20px;
+  font-size: 15px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transicao);
+}
+
+nav a:hover,
+nav button:hover {
+  text-decoration: underline;
+}
+
+/* ===============================
+   CONTEÚDO PRINCIPAL
+================================= */
+main {
+  max-width: 1000px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+/* ===============================
+   SEÇÕES
+================================= */
+section {
+  background: var(--cor-fundo-claro);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius);
+  padding: var(--espaco);
+  margin-bottom: var(--espaco);
+}
+
+section h3 {
+  margin-top: 0;
+  color: var(--cor-primaria);
+  border-bottom: 1px solid var(--cor-borda);
+  padding-bottom: 8px;
+  font-size: 18px;
+}
+
+/* ===============================
+   BEM-VINDO + PESQUISA
+================================= */
+.welcome {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.search-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  max-width: 1000px;
+}
+
+#pesquisa {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: var(--radius) 0 0 var(--radius);
+  outline: none;
+}
+
+#pesquisa:focus {
+  border-color: var(--cor-primaria);
+}
+
+#btn-pesquisar {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-left: none;
+  background-color: var(--cor-primaria);
+  color: white;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  cursor: pointer;
+  transition: var(--transicao);
+}
+
+#btn-pesquisar:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+/* ===============================
+   LISTAS DE PROCESSOS
+================================= */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color var(--transicao);
+}
+
+li:hover {
+  background-color: var(--cor-fundo);
+}
+
+/* ===============================
+   MODAL
+================================= */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.4);
+  z-index: 1000;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 800px;
+  background: var(--cor-fundo-claro);
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
+  padding: var(--espaco);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 10px 0;
+}
+
+.close {
+  float: right;
+  font-size: 22px;
+  cursor: pointer;
+  transition: var(--transicao);
+}
+
+.close:hover {
+  color: var(--cor-primaria);
+}
