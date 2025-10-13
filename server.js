@@ -1,48 +1,17 @@
+// server.js
+process.env.NODE_ENV = process.env.NODE_ENV || 'debug';
+
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
 const multer = require('multer');
 const mammoth = require('mammoth');
-
+const fs = require('fs');
 const bodyParser = require('body-parser');
 const { authenticate } = require('./auth/adAuth');
+const { executeSQL } = require('./database');
 
 const upload = multer({ dest: 'uploads/' });
-
-const dbPath = path.join(__dirname, 'data', 'DBprojeto.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) return console.error('Erro ao conectar ao banco:', err);
-  console.log('Banco de dados conectado com sucesso!');
-});
-
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS usuarios (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      usuario TEXT NOT NULL UNIQUE,
-      senha TEXT NOT NULL
-    )
-  `);
-
-  db.get("SELECT * FROM usuarios WHERE usuario = ?", ['admin'], (err, row) => {
-    if (!row) {
-      db.run("INSERT INTO usuarios (usuario, senha) VALUES (?, ?)", ['admin', '1234']);
-      console.log('Usuário admin criado: admin / 1234');
-    }
-  });
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS processos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      usuario TEXT NOT NULL,
-      titulo TEXT NOT NULL,
-      descricao TEXT,
-      data_criacao TEXT DEFAULT (datetime('now'))
-    )
-  `);
-});
-
 const app = express();
 
 app.use(express.json({ limit: '100mb' }));
@@ -53,109 +22,128 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
-
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// --- LOGIN ---
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  const ok = await authenticate(username, password);
-
-  if (ok) {
-    req.session.usuario = username;
-    res.redirect('/dashboard');
-  }
-  else {
-    res.status(401).send({ success: false, message: 'Usuário ou senha incorretos' });
+  try {
+    const ok = await authenticate(username, password);
+    if (ok) {
+      req.session.usuario = username;
+      res.redirect('/dashboard');
+    } else {
+      res.status(401).send({ success: false, message: 'Usuário ou senha incorretos' });
+    }
+  } catch (err) {
+    console.error('[ERRO] ao autenticar:', err);
+    res.status(500).send('Erro no login');
   }
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'login.html'));
-});
+// --- PÁGINAS ---
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 
 app.get('/dashboard', (req, res) => {
   if (!req.session.usuario) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
-app.post('/processos', (req, res) => {
+// --- NOVO PROCESSO ---
+app.post('/processos', async (req, res) => {
+  const { titulo, descricao, revisao, proxima_revisao } = req.body;
+  try {
+    await executeSQL(`
+      INSERT INTO TSI_PROCESSOS (USUARIO, TITULO, DESCRICAO, DATA_INCLUSAO, REVISAO, PROXIMA_REVISAO)
+      VALUES (:usuario, :titulo, :descricao, SYSDATE, :revisao, TO_DATE(:proxima_revisao, 'YYYY-MM-DD'))
+    `, { usuario: req.session.usuario, titulo, descricao, revisao, proxima_revisao });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[ERRO] ao salvar processo:', err);
+    res.status(500).send('Erro ao salvar processo');
+  }
+});
+
+// --- LISTAR MEUS PROCESSOS ---
+app.get('/meus-processos', async (req, res) => {
   const usuario = req.session.usuario;
-  const { titulo, descricao } = req.body;
-
-  if (!usuario) return res.status(403).send('Usuário não autenticado.');
-  if (!titulo) return res.status(400).send('Informe o título.');
-
-  db.run(
-    'INSERT INTO processos (usuario, titulo, descricao) VALUES (?, ?, ?)',
-    [usuario, titulo, descricao],
-    function (err) {
-      if (err) return res.status(500).send('Erro ao salvar processo.');
-      res.json({ id: this.lastID, usuario, titulo, descricao });
-    }
-  );
-});
-
-app.get('/meus-processos', (req, res) => {
-  const usuario = req.session.usuario;
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
 
-  db.all('SELECT * FROM processos WHERE usuario = ?', [usuario], (err, rows) => {
-    if (err) return res.status(500).send('Erro ao buscar processos.');
-    res.json(rows);
-  });
+  try {
+    const result = await executeSQL(`
+      SELECT TITULO, DESCRICAO,
+             TO_CHAR(DATA_INCLUSAO, 'YYYY-MM-DD') AS DATA_INCLUSAO,
+             REVISAO,
+             TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
+      FROM TSI_PROCESSOS
+      WHERE USUARIO = :usuario
+      ORDER BY DATA_INCLUSAO DESC
+    `, { usuario });
+
+    res.json(result.rows); // já tratado para JSON seguro
+  } catch (err) {
+    console.error('[ERRO] ao buscar processos:', err);
+    res.status(500).send('Erro ao buscar processos');
+  }
 });
 
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/'));
-});
-
+// --- IMPORTAR WORD ---
 app.post('/import-word', upload.single('word'), async (req, res) => {
   try {
     const filePath = req.file.path;
-
-    // Extrai o texto do arquivo Word
     const result = await mammoth.extractRawText({ path: filePath });
-    let text = result.value;
+    let text = result.value.split('\n').map(l => l.trim()).filter(Boolean).join('\n\n');
 
-    // Mantém a identação e espaçamento entre parágrafos
-    text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n\n');
-
-    // Primeira linha = título, resto = descrição
     const linhas = text.split('\n\n');
     const titulo = linhas[0] || 'Sem título';
     const descricao = linhas.slice(1).join('\n\n') || '';
 
-    // Remove o arquivo temporário
     fs.unlinkSync(filePath);
-
-    // Retorna o texto extraído ao frontend
     res.json({ titulo, descricao });
-
   } catch (error) {
-    console.error('Erro ao processar Word:', error);
+    console.error('[ERRO] ao processar Word:', error);
     res.status(500).json({ error: 'Erro ao processar o arquivo Word.' });
   }
 });
 
-app.get('/buscar-processos', (req, res) => {
+// --- BUSCA DE PROCESSOS ---
+app.get('/buscar-processos', async (req, res) => {
   const usuario = req.session.usuario;
   const q = req.query.q;
 
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
   if (!q) return res.json([]);
 
-  const sql = `
-    SELECT * FROM processos 
-    WHERE usuario = ? AND (titulo LIKE ? OR descricao LIKE ?)
-    ORDER BY id DESC
-  `;
-  const likeQuery = `%${q}%`;
+  try {
+    const result = await executeSQL(`
+      SELECT TITULO, DESCRICAO,
+             TO_CHAR(DATA_INCLUSAO, 'YYYY-MM-DD') AS DATA_INCLUSAO,
+             REVISAO,
+             TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
+      FROM TSI_PROCESSOS
+      WHERE USUARIO = :usuario
+        AND (TITULO LIKE :q OR DESCRICAO LIKE :q)
+      ORDER BY DATA_INCLUSAO DESC
+    `, { usuario, q: `%${q}%` });
 
-  db.all(sql, [usuario, likeQuery, likeQuery], (err, rows) => {
-    if (err) return res.status(500).send('Erro ao buscar processos.');
-    res.json(rows);
-  });
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[ERRO] ao buscar processos:', err);
+    res.status(500).send('Erro ao buscar processos');
+  }
 });
 
+// --- LOGOUT ---
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => res.redirect('/'));
+});
+
+// --- SERVIDOR ---
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+
+if (process.env.NODE_ENV === 'debug') {
+  console.log('Debug ativo: pressionar CTRL+C para sair...');
+  process.stdin.resume(); // mantém Node vivo no debug
+}

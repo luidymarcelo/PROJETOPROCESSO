@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnMeus = document.getElementById('btn-meus-processos');
   const novoProcesso = document.getElementById('novo-processo');
   const meusProcessos = document.getElementById('meus-processos');
-  const listaUL = document.getElementById('processos-ul');
-  const recentesUL = document.getElementById('recentes-ul');
+  const tabelaMeus = document.getElementById('tabela-meus-processos');
+  const tabelaRecentes = document.getElementById('tabela-processos-recentes');
   const btnSalvar = document.getElementById('salvar-processo');
   const inputWord = document.getElementById('word-file');
   const modal = document.getElementById('modal');
@@ -16,13 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultadosSec = document.getElementById('resultados-busca');
   const resultadosUL = document.getElementById('resultados-ul');
   const btnClear = document.getElementById('btn-clear');
-  const pesquisaInput = document.getElementById('pesquisa');
-  
-  modal.style.display = 'none'
 
-  modalClose.onclick = () => modal.style.display = 'none';
+  modal.style.display = 'none';
+  modalClose.onclick = () => (modal.style.display = 'none');
   window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; };
 
+  // Alterna seções
   btnNovo.addEventListener('click', () => {
     novoProcesso.style.display = novoProcesso.style.display === 'none' ? 'block' : 'none';
     meusProcessos.style.display = 'none';
@@ -34,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await listarProcessos();
   });
 
+  // Busca
   buscaBtn.addEventListener('click', async () => {
     const query = buscaInput.value.trim();
     if (!query) return alert('Digite uma palavra para buscar.');
@@ -49,12 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         resultados.forEach(p => {
           const li = document.createElement('li');
-          li.textContent = p.titulo;
-          li.onclick = () => {
-            modalTitulo.textContent = p.titulo;
-            modalDescricao.innerHTML = p.descricao || 'Sem descrição';
-            modal.style.display = 'block';
-          };
+          li.innerHTML = `
+            <strong>${p.titulo}</strong><br>
+            Revisão: ${p.revisao || '-'} | Próxima: ${p.data_proxima_revisao || '-'}
+          `;
+          li.onclick = () => abrirModal(p);
           resultadosUL.appendChild(li);
         });
       }
@@ -67,19 +66,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnClear.addEventListener('click', () => {
-      pesquisaInput.value = '';
-
-      // Se quiser também esconder os resultados da busca
-      const resultadosBusca = document.getElementById('resultados-busca');
-      resultadosBusca.style.display = 'none';
-
-      const resultadosUL = document.getElementById('resultados-ul');
-      resultadosUL.innerHTML = '';
+    buscaInput.value = '';
+    resultadosSec.style.display = 'none';
+    resultadosUL.innerHTML = '';
   });
 
+  // Salvar novo processo
   btnSalvar.addEventListener('click', async () => {
     const titulo = document.getElementById('titulo').value.trim();
-    const descricao = document.getElementById('descricao').value.trim();
+    const descricao = document.getElementById('descricao').innerHTML.trim();
+    const revisao = document.getElementById('revisao').value.trim();
+    const data_proxima_revisao = document.getElementById('data_proxima_revisao').value.trim();
 
     if (!titulo) return alert('Digite o título do processo.');
 
@@ -87,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/processos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, descricao })
+        body: JSON.stringify({ titulo, descricao, revisao, data_proxima_revisao })
       });
 
       if (!res.ok) {
@@ -97,7 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       document.getElementById('titulo').value = '';
-      document.getElementById('descricao').value = '';
+      document.getElementById('descricao').innerHTML = '';
+      document.getElementById('revisao').value = '';
+      document.getElementById('data_proxima_revisao').value = '';
       novoProcesso.style.display = 'none';
 
       await listarProcessos();
@@ -108,19 +107,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Importar Word
   inputWord?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-
-      mammoth.convertToHtml({ arrayBuffer }) // 🔹 converte para HTML, não texto cru
+      mammoth.convertToHtml({ arrayBuffer })
         .then(result => {
-          let html = result.value; // Conteúdo formatado
-          html = html.replace(/\n/g, "<br>"); // garante espaçamento visual
-
-          // Primeira linha = título, resto = descrição
+          let html = result.value.replace(/\n/g, "<br>");
           const tempDiv = document.createElement("div");
           tempDiv.innerHTML = html;
           const firstParagraph = tempDiv.querySelector("p");
@@ -130,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const descricao = tempDiv.innerHTML.trim();
 
           document.getElementById("titulo").value = titulo;
-          document.getElementById("descricao").value = descricao;
+          document.getElementById("descricao").innerHTML = descricao;
         })
         .catch(err => {
           console.error("Erro ao ler Word:", err);
@@ -142,42 +138,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Função padrão para abrir modal
+  function abrirModal(p) {
+    modalTitulo.textContent = p.titulo;
+    modalDescricao.innerHTML = `
+      <p><strong>Data de Inclusão:</strong> ${p.data_criacao || '-'}</p>
+      <p><strong>Revisão:</strong> ${p.revisao || '-'}</p>
+      <p><strong>Próxima Revisão:</strong> ${p.data_proxima_revisao || '-'}</p>
+      <hr>
+      <p>${p.descricao || 'Sem descrição'}</p>
+    `;
+    modal.style.display = 'block';
+  }
 
+  // Cria linha da tabela (para ambos os blocos)
+  function criarLinhaTabela(p) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.titulo}</td>
+      <td>${p.data_criacao ? new Date(p.data_criacao).toLocaleDateString() : '-'}</td>
+      <td>${p.revisao || '-'}</td>
+      <td>${p.data_proxima_revisao || '-'}</td>
+    `;
+    tr.onclick = () => abrirModal(p);
+    return tr;
+  }
+
+  // Listar "Meus Processos"
   async function listarProcessos() {
     try {
       const res = await fetch('/meus-processos');
       if (!res.ok) return alert('Erro ao carregar processos.');
       const processos = await res.json();
-      listaUL.innerHTML = '';
-      processos.forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = p.titulo;
-        li.onclick = () => {
-          modalTitulo.textContent = p.titulo;
-          modalDescricao.innerHTML = p.descricao || 'Sem descrição';
-          modal.style.display = 'block';
-        };
-        listaUL.appendChild(li);
-      });
+      tabelaMeus.innerHTML = '';
+      processos.forEach(p => tabelaMeus.appendChild(criarLinhaTabela(p)));
     } catch (e) { console.error(e); }
   }
 
+  // "Processos Recentes" — mesmo layout da tabela
   async function carregarRecentes() {
     try {
       const res = await fetch('/meus-processos');
       if (!res.ok) return;
       const processos = await res.json();
-      recentesUL.innerHTML = '';
-      processos.slice(-5).reverse().forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = p.titulo;
-        li.onclick = () => {
-          modalTitulo.textContent = p.titulo;
-          modalDescricao.innerHTML = p.descricao || 'Sem descrição';
-          modal.style.display = 'block';
-        };
-        recentesUL.appendChild(li);
-      });
+      tabelaRecentes.innerHTML = '';
+      processos.slice(-5).reverse().forEach(p => tabelaRecentes.appendChild(criarLinhaTabela(p)));
     } catch (e) { console.error(e); }
   }
 

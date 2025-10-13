@@ -7,6 +7,24 @@
       "name": "Debug Node",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/server.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Server",
+      "program": "${workspaceFolder}/server.js",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--inspect-brk"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Node Debug",
+      "port": 9229,
+      "restart": true,
+      "protocol": "inspector"
     }
   ]
 }

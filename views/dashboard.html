@@ -35,7 +35,6 @@
       </div>
     </section>
 
-
     <section class="resultados-busca" id="resultados-busca" style="display:none;">
       <h3>Resultados da busca</h3>
       <ul id="resultados-ul"></ul>
@@ -43,22 +42,55 @@
 
     <section class="novo-processo" id="novo-processo" style="display:none;">
       <h3>Novo Processo</h3>
-      <input type="text" id="titulo" placeholder="Título do processo" />
-      <div id="descricao" contenteditable="true" style="white-space: normal; line-height: 1.6; min-height: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff;"></div>
 
+      <label for="titulo">Título do Processo:</label>
+      <input type="text" id="titulo" placeholder="Digite o título do processo" />
+
+      <label for="descricao">Descrição:</label>
+      <div id="descricao" contenteditable="true"
+        style="white-space: normal; line-height: 1.6; min-height: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff;">
+      </div>
+
+      <label for="revisao">Número da Revisão:</label>
+      <input type="number" id="revisao" placeholder="Ex: 1" min="1" value="1" />
+
+      <label for="data_proxima_revisao">Data da Próxima Revisão:</label>
+      <input type="date" id="data_proxima_revisao" />
+
+      <label for="word-file">Importar de arquivo Word (opcional):</label>
       <input type="file" id="word-file" accept=".doc,.docx" />
 
-      <button id="salvar-processo"> Salvar</button>
+      <button id="salvar-processo">Salvar Processo</button>
     </section>
 
     <section class="meus-processos" id="meus-processos" style="display:none;">
-      <h3> Meus Processos</h3>
-      <ul id="processos-ul"></ul>
+      <h3>Meus Processos</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Data de Inclusão</th>
+            <th>Revisão</th>
+            <th>Próxima Revisão</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-meus-processos"></tbody>
+      </table>
     </section>
 
     <section class="processos-recentes">
-      <h3> Processos Recentes</h3>
-      <ul id="recentes-ul"></ul>
+      <h3>Processos Recentes</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Data de Inclusão</th>
+            <th>Revisão</th>
+            <th>Próxima Revisão</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-processos-recentes"></tbody>
+      </table>
     </section>
 
   </main>
