@@ -7,11 +7,8 @@
   <title>Portal de Processos</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.4/mammoth.browser.min.js"></script>
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    window.mermaid = mermaid;
-    mermaid.initialize({ startOnLoad: false });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:false});</script>
 </head>
 <body>
 
@@ -98,24 +95,20 @@
         <tbody id="tabela-processos-recentes"></tbody>
       </table>
     </section>
-
   </main>
 
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h3 id="modal-titulo"></h3>
-      <div style="display: flex; gap: 20px;">
-        
-        <!-- Lado esquerdo: Word / descrição -->
-        <div id="modal-descricao" style="flex: 1; overflow-y: auto;"></div>
-        
-        <!-- Lado direito: Fluxograma -->
-        <div id="modal-fluxograma" class="mermaid" style="flex: 1; overflow-x: auto;"></div>
-        
-      </div>
-    </div>
+  <!-- Display Word -->
+  <div id="display-word" class="display-box" style="position: fixed; top: 50px; left: 20px; width: 45%; height: 80%; border: 1px solid #ccc; background: #fff; overflow-y: auto; display: none; padding: 10px; border-radius: 8px; z-index: 999;">
+    <h3>Conteúdo do Word</h3>
+    <div id="word-content"></div>
   </div>
+
+  <!-- Display Fluxograma -->
+  <div id="display-fluxo" class="display-box" style="position: fixed; top: 50px; right: 20px; width: 45%; height: 80%; border: 1px solid #ccc; background: #fff; overflow-y: auto; display: none; padding: 10px; border-radius: 8px; z-index: 999;">
+    <h3>Fluxograma</h3>
+    <div id="fluxo-content"></div>
+  </div>
+
   <script src="/js/main.js"></script>
 </body>
 </html>

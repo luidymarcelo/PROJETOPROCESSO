@@ -7,10 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabelaRecentes = document.getElementById('tabela-processos-recentes');
   const btnSalvar = document.getElementById('salvar-processo');
   const inputWord = document.getElementById('word-file');
-  const modal = document.getElementById('modal');
-  const modalTitulo = document.getElementById('modal-titulo');
-  const modalDescricao = document.getElementById('modal-descricao');
-  const modalClose = document.querySelector('.close');
   const buscaInput = document.getElementById('pesquisa');
   const buscaBtn = document.getElementById('btn-pesquisar');
   const resultadosSec = document.getElementById('resultados-busca');
@@ -18,15 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnClear = document.getElementById('btn-clear');
   const inputProxRev = document.getElementById('data_proxima_revisao');
 
+  // Define data da próxima revisão
   if (inputProxRev) {
     const hoje = new Date();
     hoje.setMonth(hoje.getMonth() + 6);
     inputProxRev.value = hoje.toISOString().split('T')[0];
   }
-
-  modal.style.display = 'none';
-  modalClose.onclick = () => (modal.style.display = 'none');
-  window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; };
 
   // Alterna seções
   btnNovo.addEventListener('click', () => {
@@ -56,11 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         resultados.forEach(p => {
           const li = document.createElement('li');
-          li.innerHTML = `
-            <strong>${p.titulo}</strong><br>
-            Revisão: ${p.revisao || '-'} | Próxima: ${p.data_proxima_revisao || '-'}
-          `;
-          li.onclick = () => abrirModal(p);
+          li.innerHTML = `<strong>${p.titulo}</strong><br>Revisão: ${p.revisao || '-'} | Próxima: ${p.data_proxima_revisao || '-'}`;
+          li.onclick = () => abrirDisplaysSeparados(p);
           resultadosUL.appendChild(li);
         });
       }
@@ -113,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Importação de Word
   inputWord?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -121,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const arrayBuffer = await file.arrayBuffer();
       const result = await mammoth.convertToHtml({ arrayBuffer });
 
-      // Extrair título do primeiro parágrafo
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = result.value;
       const firstParagraph = tempDiv.querySelector("p");
@@ -139,54 +129,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Função padrão para abrir modal
-  function abrirModal(p) {
-    const modalTitulo = document.getElementById('modal-titulo');
-    const modalDescricao = document.getElementById('modal-descricao');
-    const modalFluxograma = document.getElementById('modal-fluxograma');
+  function abrirDisplaysSeparados(p) {
+    const wordContent = document.getElementById('word-content');
+    wordContent.innerHTML = p.descricao || '<p>Sem descrição</p>';
 
-    modalTitulo.textContent = p.titulo;
-
-    // Conteúdo do Word / descrição
-    modalDescricao.innerHTML = p.descricao || '<p>Sem descrição</p>';
-
-    // Fluxograma Mermaid
-    modalFluxograma.innerHTML = p.fluxograma || `
+    const fluxoContent = document.getElementById('fluxo-content');
+    fluxoContent.innerHTML = p.fluxograma || `
       graph TD
-          A[Início] --> B{Decisão?}
-          B -->|Sim| C[Fim]
-          B -->|Não| D[Revisão]
-          D --> B
+        A[Início] --> B{Decisão?}
+        B -->|Sim| C[Fim]
+        B -->|Não| D[Revisão]
+        D --> B
     `;
+    if (window.mermaid) mermaid.init(undefined, fluxoContent);
 
-    // Renderiza o Mermaid
-    if (window.mermaid) {
-      mermaid.init(undefined, modalFluxograma);
-    }
-
-    // Mostra o modal
-    document.getElementById('modal').style.display = 'block';
+    document.getElementById('display-word').style.display = 'block';
+    document.getElementById('display-fluxo').style.display = 'block';
   }
 
+  function fecharWord() {
+    document.getElementById('display-word').style.display = 'none';
+  }
+
+  function fecharFluxo() {
+    document.getElementById('display-fluxo').style.display = 'none';
+  }
+
+  // ESC fecha qualquer display
+  document.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") {
+      fecharWord();
+      fecharFluxo();
+    }
+  });
+
+  // Carregar dados do usuário
   (async () => {
     try {
       const res = await fetch('/api/usuario');
       if (!res.ok) return console.warn('Não foi possível carregar usuário.');
-
       const usuario = await res.json();
       const userInfoDiv = document.getElementById('user-info');
       if (userInfoDiv && usuario) {
-        userInfoDiv.innerHTML = `
-          <strong>${usuario.usr}</strong> - ${usuario.nome}<br>
-          <small>${usuario.departamento} • ${usuario.cargo}</small>
-        `;
+        userInfoDiv.innerHTML = `<strong>${usuario.usr}</strong> - ${usuario.nome}<br><small>${usuario.departamento} • ${usuario.cargo}</small>`;
       }
-    } catch (err) {
-      console.error('Erro ao carregar dados do usuário:', err);
-    }
+    } catch (err) { console.error('Erro ao carregar dados do usuário:', err); }
   })();
 
-  // Cria linha da tabela (para ambos os blocos)
+  // Criar linhas da tabela
   function criarLinhaTabela(p) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -195,11 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${p.revisao || '-'}</td>
       <td>${p.proxima_revisao || '-'}</td>
     `;
-    tr.onclick = () => abrirModal(p);
+    tr.onclick = () => abrirDisplaysSeparados(p);
     return tr;
   }
 
-  // Listar "Meus Processos"
+  // Listar processos
   async function listarProcessos() {
     try {
       const res = await fetch('/meus-processos');
@@ -210,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) { console.error(e); }
   }
 
-  // "Processos Recentes" — mesmo layout da tabela
   async function carregarRecentes() {
     try {
       const res = await fetch('/meus-processos');
