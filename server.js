@@ -41,39 +41,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.get('/api/usuario', async (req, res) => {
-  try {
-    const adUser = req.session.user?.AD; // ou o campo que você guarda o login do AD
-    if (!adUser) return res.status(401).json({ message: 'Usuário não autenticado' });
-
-    const query = `
-      SELECT 
-          A.USR_ID            AS ID,
-          A.USR_MSBLQL        AS BLOQUEADO,
-          A.USR_CODIGO        AS USR,
-          A.USR_NOME          AS NOME,
-          A.USR_EMAIL         AS EMAIL,
-          A.USR_DEPTO         AS DEPARTAMENTO,
-          A.USR_CARGO         AS CARGO,
-          B.USR_SO_DOMINIO    AS DOMINIO,
-          B.USR_SO_USERLOGIN  AS AD,
-          A2.USR_CODIGO       AS SUPERIOR
-      FROM SYS_USR A
-      LEFT JOIN SYS_USR_SSIGNON B ON A.USR_ID = B.USR_ID AND B.D_E_L_E_T_ <> '*'
-      LEFT JOIN SYS_USR A2 ON A.USR_ID_SUPERIOR = A2.USR_ID
-      WHERE B.USR_SO_USERLOGIN = :adUser
-    `;
-
-    const result = await executeSQL(query, { adUser });
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: 'Usuário não encontrado' });
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('[API] Erro ao buscar usuário:', err);
-    res.status(500).json({ message: 'Erro interno ao buscar usuário' });
-  }
-});
 
 // --- PÁGINAS ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
