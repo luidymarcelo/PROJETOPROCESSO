@@ -141,16 +141,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Função padrão para abrir modal
   function abrirModal(p) {
+    const modalTitulo = document.getElementById('modal-titulo');
+    const modalDescricao = document.getElementById('modal-descricao');
+    const modalFluxograma = document.getElementById('modal-fluxograma');
+
     modalTitulo.textContent = p.titulo;
-    modalDescricao.innerHTML = `
-      <p><strong>Data de Inclusão:</strong> ${p.data_inclusao || '-'}</p>
-      <p><strong>Revisão:</strong> ${p.revisao || '-'}</p>
-      <p><strong>Próxima Revisão:</strong> ${p.proxima_revisao || '-'}</p>
-      <hr>
-      ${p.descricao || '<p>Sem descrição</p>'}
+
+    // Conteúdo do Word / descrição
+    modalDescricao.innerHTML = p.descricao || '<p>Sem descrição</p>';
+
+    // Fluxograma Mermaid
+    modalFluxograma.innerHTML = p.fluxograma || `
+      graph TD
+          A[Início] --> B{Decisão?}
+          B -->|Sim| C[Fim]
+          B -->|Não| D[Revisão]
+          D --> B
     `;
-    modal.style.display = 'block';
+
+    // Renderiza o Mermaid
+    if (window.mermaid) {
+      mermaid.init(undefined, modalFluxograma);
+    }
+
+    // Mostra o modal
+    document.getElementById('modal').style.display = 'block';
   }
+
+  (async () => {
+    try {
+      const res = await fetch('/api/usuario');
+      if (!res.ok) return console.warn('Não foi possível carregar usuário.');
+
+      const usuario = await res.json();
+      const userInfoDiv = document.getElementById('user-info');
+      if (userInfoDiv && usuario) {
+        userInfoDiv.innerHTML = `
+          <strong>${usuario.usr}</strong> - ${usuario.nome}<br>
+          <small>${usuario.departamento} • ${usuario.cargo}</small>
+        `;
+      }
+    } catch (err) {
+      console.error('Erro ao carregar dados do usuário:', err);
+    }
+  })();
 
   // Cria linha da tabela (para ambos os blocos)
   function criarLinhaTabela(p) {

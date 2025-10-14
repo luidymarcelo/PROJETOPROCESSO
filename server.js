@@ -24,7 +24,6 @@ app.use(session({
 }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// --- LOGIN ---
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -41,8 +40,50 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.get('/api/usuario', async (req, res) => {
+  try {
+    const adUser = req.session.usuario;
+    if (!adUser) return res.status(401).json({ message: 'Usuário não autenticado' });
 
-// --- PÁGINAS ---
+    const query = `
+      SELECT 
+          A.USR_ID            AS ID,
+          A.USR_MSBLQL        AS BLOQUEADO,
+          A.USR_CODIGO        AS USR,
+          A.USR_NOME          AS NOME,
+          A.USR_EMAIL         AS EMAIL,
+          A.USR_DEPTO         AS DEPARTAMENTO,
+          A.USR_CARGO         AS CARGO,
+          B.USR_SO_DOMINIO    AS DOMINIO,
+          B.USR_SO_USERLOGIN  AS AD,
+          A2.USR_CODIGO       AS SUPERIOR
+      FROM SYS_USR A
+      LEFT JOIN SYS_USR_SSIGNON B
+          ON A.USR_ID = B.USR_ID
+          AND B.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_USR_SUPER C
+          ON A.USR_ID = C.USR_ID
+          AND C.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_USR A2
+          ON C.USR_SUPER = A2.USR_ID
+          AND A2.D_E_L_E_T_ <> '*'
+      WHERE 
+          A.USR_MSBLQL = '2'
+          AND A.D_E_L_E_T_ <> '*'
+          AND B.USR_SO_USERLOGIN = '${adUser}'
+    `;
+
+    const result = await executeSQL(query);
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('[API] Erro ao buscar usuário:', err);
+    res.status(500).json({ message: 'Erro interno ao buscar usuário' });
+  }
+});
+
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 
 app.get('/dashboard', (req, res) => {
@@ -50,7 +91,6 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
-// --- NOVO PROCESSO ---
 app.post('/processos', async (req, res) => {
   const { titulo, descricao, revisao, proxima_revisao } = req.body;
   try {
@@ -66,7 +106,6 @@ app.post('/processos', async (req, res) => {
   }
 });
 
-// --- LISTAR MEUS PROCESSOS ---
 app.get('/meus-processos', async (req, res) => {
   const usuario = req.session.usuario;
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
@@ -96,7 +135,6 @@ app.get('/meus-processos', async (req, res) => {
   }
 });
 
-// --- IMPORTAR WORD ---
 app.post('/import-word', upload.single('word'), async (req, res) => {
   try {
     const filePath = req.file.path;
@@ -119,7 +157,6 @@ app.post('/import-word', upload.single('word'), async (req, res) => {
   }
 });
 
-// --- BUSCA DE PROCESSOS ---
 app.get('/buscar-processos', async (req, res) => {
   const usuario = req.session.usuario;
   const q = req.query.q;
@@ -146,12 +183,10 @@ app.get('/buscar-processos', async (req, res) => {
   }
 });
 
-// --- LOGOUT ---
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
 });
 
-// --- SERVIDOR ---
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
 
