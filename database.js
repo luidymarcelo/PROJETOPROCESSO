@@ -1,11 +1,19 @@
 // database.js
 const oracledb = require('oracledb');
+console.log('Modo atual:', oracledb.thin ? 'Thin' : 'Thick');
+
+try {
+  oracledb.initOracleClient({ libDir: 'C:\\oracle\\instantclient_19_28' }); // caminho da pasta que você extraiu
+  console.log('Cliente Oracle inicializado (modo Thick).');
+} catch (err) {
+  console.error('Erro ao inicializar Oracle Client:', err);
+}
 
 // Configurações de conexão com o banco Protheus (Oracle)
 const dbConfig = {
-  user: 'protheus',
+  user: 'Protheus',
   password: '2023prodpr0theusita',
-  connectString: '192.168.1.237:1521/Homo'
+  connectString: '192.168.1.244:1521/prod'
 };
 
 // Configura o formato de fetch globalmente (boa prática)
@@ -56,18 +64,22 @@ async function executeSQL(query, binds = {}, options = {}) {
     const result = await connection.execute(query, binds, execOptions);
 
     if (result.rows) {
-      // Remove referências circulares e normaliza datas
-      const rowsSimples = removeCircularReferences(result.rows).map(row => {
+      const rowsSimples = [];
+      for (let row of result.rows) {
         const obj = {};
         for (const key in row) {
           const value = row[key];
-          obj[key] = value instanceof Date
-            ? value.toISOString().split('T')[0] // Formato YYYY-MM-DD
-            : value;
-        }
-        return obj;
-      });
 
+          if (value instanceof Date) {
+            obj[key.toLowerCase()] = value.toISOString().split('T')[0]; // datas
+          } else if (value && typeof value === 'object' && typeof value.getData === 'function') {
+            obj[key.toLowerCase()] = await value.getData();
+          } else {
+            obj[key.toLowerCase()] = value;
+          }
+        }
+        rowsSimples.push(obj);
+      }
       return { rows: rowsSimples };
     }
 

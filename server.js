@@ -41,6 +41,40 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.get('/api/usuario', async (req, res) => {
+  try {
+    const adUser = req.session.user?.AD; // ou o campo que você guarda o login do AD
+    if (!adUser) return res.status(401).json({ message: 'Usuário não autenticado' });
+
+    const query = `
+      SELECT 
+          A.USR_ID            AS ID,
+          A.USR_MSBLQL        AS BLOQUEADO,
+          A.USR_CODIGO        AS USR,
+          A.USR_NOME          AS NOME,
+          A.USR_EMAIL         AS EMAIL,
+          A.USR_DEPTO         AS DEPARTAMENTO,
+          A.USR_CARGO         AS CARGO,
+          B.USR_SO_DOMINIO    AS DOMINIO,
+          B.USR_SO_USERLOGIN  AS AD,
+          A2.USR_CODIGO       AS SUPERIOR
+      FROM SYS_USR A
+      LEFT JOIN SYS_USR_SSIGNON B ON A.USR_ID = B.USR_ID AND B.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_USR A2 ON A.USR_ID_SUPERIOR = A2.USR_ID
+      WHERE B.USR_SO_USERLOGIN = :adUser
+    `;
+
+    const result = await executeSQL(query, { adUser });
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('[API] Erro ao buscar usuário:', err);
+    res.status(500).json({ message: 'Erro interno ao buscar usuário' });
+  }
+});
+
 // --- PÁGINAS ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 
@@ -55,8 +89,8 @@ app.post('/processos', async (req, res) => {
   try {
     await executeSQL(`
       INSERT INTO TSI_PROCESSOS (USUARIO, TITULO, DESCRICAO, DATA_INCLUSAO, REVISAO, PROXIMA_REVISAO)
-      VALUES (:usuario, :titulo, :descricao, SYSDATE, :revisao, TO_DATE(:proxima_revisao, 'YYYY-MM-DD'))
-    `, { usuario: req.session.usuario, titulo, descricao, revisao, proxima_revisao });
+      VALUES (:usuario, :titulo, :descricao, SYSDATE, :revisao, ADD_MONTHS(SYSDATE, 6))
+    `, { usuario: req.session.usuario, titulo, descricao, revisao });
 
     res.json({ success: true });
   } catch (err) {
@@ -73,15 +107,22 @@ app.get('/meus-processos', async (req, res) => {
   try {
     const result = await executeSQL(`
       SELECT TITULO, DESCRICAO,
-             TO_CHAR(DATA_INCLUSAO, 'YYYY-MM-DD') AS DATA_INCLUSAO,
-             REVISAO,
-             TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
+            TO_CHAR(DATA_INCLUSAO, 'YYYY-MM-DD') AS DATA_INCLUSAO,
+            REVISAO,
+            TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
       ORDER BY DATA_INCLUSAO DESC
     `, { usuario });
 
-    res.json(result.rows); // já tratado para JSON seguro
+    // Garantir que descricao seja string
+    const processos = result.rows.map(p => ({
+      ...p,
+      descricao: p.descricao ? String(p.descricao) : ''
+    }));
+
+    res.json(processos);
+
   } catch (err) {
     console.error('[ERRO] ao buscar processos:', err);
     res.status(500).send('Erro ao buscar processos');
@@ -92,15 +133,19 @@ app.get('/meus-processos', async (req, res) => {
 app.post('/import-word', upload.single('word'), async (req, res) => {
   try {
     const filePath = req.file.path;
-    const result = await mammoth.extractRawText({ path: filePath });
-    let text = result.value.split('\n').map(l => l.trim()).filter(Boolean).join('\n\n');
+    const result = await mammoth.convertToHtml({ path: filePath });
+    const html = result.value;
 
-    const linhas = text.split('\n\n');
-    const titulo = linhas[0] || 'Sem título';
-    const descricao = linhas.slice(1).join('\n\n') || '';
+    const tempDiv = document.createElement("div"); // Não funciona no Node.js
+    const match = html.match(/<p>(.*?)<\/p>/i);
+    const titulo = match ? match[1].trim() : "Sem título";
+
+    // Remove o primeiro parágrafo do HTML
+    const descricao = html.replace(match[0], '').trim();
 
     fs.unlinkSync(filePath);
     res.json({ titulo, descricao });
+
   } catch (error) {
     console.error('[ERRO] ao processar Word:', error);
     res.status(500).json({ error: 'Erro ao processar o arquivo Word.' });
