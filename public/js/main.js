@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultados.forEach(p => {
           const li = document.createElement('li');
           li.innerHTML = `<strong>${p.titulo}</strong><br>Revisão: ${p.revisao || '-'} | Próxima: ${p.data_proxima_revisao || '-'}`;
-          li.onclick = () => abrirDisplaysSeparados(p);
+          li.onclick = () => abrirword(p);
           resultadosUL.appendChild(li);
         });
       }
@@ -129,30 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  function abrirDisplaysSeparados(p) {
+  function abrirword(p) {
     const wordContent = document.getElementById('word-content');
     wordContent.innerHTML = p.descricao || '<p>Sem descrição</p>';
 
-    const fluxoContent = document.getElementById('fluxo-content');
-    fluxoContent.innerHTML = p.fluxograma || `
-      graph TD
-        A[Início] --> B{Decisão?}
-        B -->|Sim| C[Fim]
-        B -->|Não| D[Revisão]
-        D --> B
-    `;
-    if (window.mermaid) mermaid.init(undefined, fluxoContent);
-
     document.getElementById('display-word').style.display = 'block';
-    document.getElementById('display-fluxo').style.display = 'block';
   }
 
   function fecharWord() {
     document.getElementById('display-word').style.display = 'none';
-  }
-
-  function fecharFluxo() {
-    document.getElementById('display-fluxo').style.display = 'none';
   }
 
   // ESC fecha qualquer display
@@ -185,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${p.revisao || '-'}</td>
       <td>${p.proxima_revisao || '-'}</td>
     `;
-    tr.onclick = () => abrirDisplaysSeparados(p);
+    tr.onclick = () => abrirword(p);
     return tr;
   }
 

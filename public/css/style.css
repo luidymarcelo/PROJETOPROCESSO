@@ -8,7 +8,7 @@
   --cor-borda: #ddd;
   --cor-texto: #333;
   --cor-fundo-claro: #fff;
-  --radius: 6px;
+  --radius: 8px;
   --espaco: 20px;
   --transicao: 0.2s ease;
   --header-height: 60px;
@@ -29,7 +29,7 @@ body {
 ================================= */
 header {
   background-color: var(--cor-primaria);
-  color: white;
+  color: #fff;
   height: var(--header-height);
   display: flex;
   align-items: center;
@@ -46,7 +46,7 @@ header {
 .header-logo img { height: 40px; }
 
 nav a, nav button {
-  color: white;
+  color: #fff;
   background: none;
   border: none;
   margin-left: 20px;
@@ -163,45 +163,54 @@ tbody tr:last-child td { border-bottom: none; }
 .user-info .dept-line { display: block; font-size: 13px; opacity: 0.85; }
 
 /* ===============================
-   DISPLAYS WORD & FLUXO
+   DISPLAY WORD / FLUXO (centralizado e limpo)
 ================================= */
 .display-box {
   position: fixed;
-  top: 60px;
-  width: 45%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  max-width: 900px;
   height: 80%;
-  background: #fff;
+  background: var(--cor-fundo-claro);
   border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 15px;
+  border-radius: 12px;
+  padding: 25px;
   overflow-y: auto;
   z-index: 999;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  display: none;
+  animation: aparecer 0.3s ease;
 }
 
-#display-word { left: 2%; }
-#display-fluxo { right: 2%; background: #f9f9f9; }
+.display-box h3 {
+  margin-top: 0;
+  color: var(--cor-primaria);
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 8px;
+}
 
-.display-box h3 { margin-top: 0; color: var(--cor-primaria); }
 .display-box button {
-  float: right;
-  margin-bottom: 10px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
   cursor: pointer;
   background: var(--cor-primaria);
   color: #fff;
   border: none;
   padding: 6px 12px;
   border-radius: var(--radius);
+  transition: var(--transicao);
 }
-.display-box button:hover { background: var(--cor-primaria-hover); }
-
-/* ===============================
-   RESPONSIVO
-================================= */
-@media(max-width: 900px) {
-  .display-box { width: 95%; top: 70px; left: 2.5%; right: 2.5%; height: 70%; }
+.display-box button:hover {
+  background: var(--cor-primaria-hover);
 }
 
+@keyframes aparecer {
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
 
 /* Ajustes para o conteúdo do Word */
 #word-content img {
@@ -209,6 +218,7 @@ tbody tr:last-child td { border-bottom: none; }
   height: auto;
   display: block;
   margin: 10px 0;
+  text-align: center;
 }
 
 #word-content table {
@@ -231,14 +241,83 @@ tbody tr:last-child td { border-bottom: none; }
   margin: 10px 0;
 }
 
-#fluxo-content {
-  display: flex;
-  justify-content: center; /* centraliza horizontalmente */
-  align-items: center;     /* centraliza verticalmente */
-  min-height: 100%;        /* garante que ocupe todo o display */
-  overflow: auto;
+/* ===============================
+   RESPONSIVO
+================================= */
+@media(max-width: 900px) {
+  .display-box { width: 95%; height: 70%; padding: 15px; }
 }
-#fluxo-content svg {
-  max-width: 100%;
-  height: auto;
+
+/* ===============================
+   LOGIN PADRONIZADO
+================================= */
+body.login-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: var(--cor-fundo);
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.login-container {
+  background: var(--cor-fundo-claro);
+  padding: 40px 30px;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  text-align: center;
+  width: 100%;
+  max-width: 400px; /* mesmo padrão de largura */
+  box-sizing: border-box;
+}
+
+.login-container h1 {
+  margin-bottom: 25px;
+  color: var(--cor-primaria);
+  font-size: 22px;
+}
+
+/* Campos de input padronizados */
+.login-container input {
+  width: 100%; /* ocupa toda a largura do container */
+  padding: 12px 15px;
+  margin: 8px 0;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius);
+  outline: none;
+  font-size: 14px;
+  background: var(--cor-fundo-claro);
+  color: var(--cor-texto);
+  transition: border-color var(--transicao);
+  box-sizing: border-box;
+}
+
+.login-container input:focus {
+  border-color: var(--cor-primaria);
+}
+
+/* Botão padronizado */
+.login-container button {
+  width: 100%; /* mesma largura que os inputs */
+  padding: 12px;
+  margin-top: 15px;
+  background-color: var(--cor-primaria);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 15px;
+  transition: var(--transicao);
+  box-sizing: border-box;
+}
+
+.login-container button:hover {
+  background-color: var(--cor-primaria-hover);
+}
+
+/* Footer opcional */
+.login-container .footer {
+  margin-top: 15px;
+  font-size: 12px;
+  color: #666;
 }
