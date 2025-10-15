@@ -13,15 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultadosUL = document.getElementById('resultados-ul');
   const btnClear = document.getElementById('btn-clear');
   const inputProxRev = document.getElementById('data_proxima_revisao');
+  const btnTreinee = document.getElementById('btn-treinamentos');
 
-  // Define data da próxima revisão
   if (inputProxRev) {
     const hoje = new Date();
     hoje.setMonth(hoje.getMonth() + 6);
     inputProxRev.value = hoje.toISOString().split('T')[0];
   }
 
-  // Alterna seções
   btnNovo.addEventListener('click', () => {
     novoProcesso.style.display = novoProcesso.style.display === 'none' ? 'block' : 'none';
     meusProcessos.style.display = 'none';
@@ -33,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     await listarProcessos();
   });
 
-  // Busca
   buscaBtn.addEventListener('click', async () => {
     const query = buscaInput.value.trim();
     if (!query) return alert('Digite uma palavra para buscar.');
@@ -68,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
     resultadosUL.innerHTML = '';
   });
 
-  // Salvar novo processo
   btnSalvar.addEventListener('click', async () => {
     const titulo = document.getElementById('titulo').value.trim();
     const descricao = document.getElementById('descricao').innerHTML.trim();
@@ -77,10 +74,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!titulo) return alert('Digite o título do processo.');
 
     try {
+      const userRes = await fetch('/api/usuario');
+      if (!userRes.ok) return console.warn('Não foi possível carregar usuário.');
+      const usuario = await userRes.json();
+      var userid = usuario.id
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao salvar processo.');
+    }
+
+    try {
       const res = await fetch('/processos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, descricao, revisao })
+        body: JSON.stringify({ userid, titulo, descricao, revisao })
       });
 
       if (!res.ok) {
@@ -88,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Erro: ' + erro);
         return;
       }
-
+      
       document.getElementById('titulo').value = '';
       document.getElementById('descricao').innerHTML = '';
       document.getElementById('revisao').value = '';
@@ -103,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Importação de Word
   inputWord?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -140,15 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('display-word').style.display = 'none';
   }
 
-  // ESC fecha qualquer display
   document.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
       fecharWord();
-      fecharFluxo();
     }
   });
 
-  // Carregar dados do usuário
   (async () => {
     try {
       const res = await fetch('/api/usuario');
@@ -161,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) { console.error('Erro ao carregar dados do usuário:', err); }
   })();
 
-  // Criar linhas da tabela
   function criarLinhaTabela(p) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -174,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return tr;
   }
 
-  // Listar processos
   async function listarProcessos() {
     try {
       const res = await fetch('/meus-processos');

@@ -14,8 +14,8 @@ const { executeSQL } = require('./database');
 const upload = multer({ dest: 'uploads/' });
 const app = express();
 
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+app.use(express.json({ limit: '1000mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1000mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: 'segredo123',
@@ -29,7 +29,7 @@ app.post('/login', async (req, res) => {
   try {
     const ok = await authenticate(username, password);
     if (ok) {
-      req.session.usuario = username;
+      req.session.ad = username;
       res.redirect('/dashboard');
     } else {
       res.status(401).send({ success: false, message: 'Usuário ou senha incorretos' });
@@ -42,21 +42,21 @@ app.post('/login', async (req, res) => {
 
 app.get('/api/usuario', async (req, res) => {
   try {
-    const adUser = req.session.usuario;
+    const adUser = req.session.ad;
     if (!adUser) return res.status(401).json({ message: 'Usuário não autenticado' });
 
     const query = `
       SELECT 
-          A.USR_ID            AS ID,
-          A.USR_MSBLQL        AS BLOQUEADO,
-          A.USR_CODIGO        AS USR,
-          A.USR_NOME          AS NOME,
-          A.USR_EMAIL         AS EMAIL,
-          A.USR_DEPTO         AS DEPARTAMENTO,
-          A.USR_CARGO         AS CARGO,
-          B.USR_SO_DOMINIO    AS DOMINIO,
-          B.USR_SO_USERLOGIN  AS AD,
-          A2.USR_CODIGO       AS SUPERIOR
+        NVL(A.USR_ID, 'N/D')             AS ID,
+        NVL(A.USR_MSBLQL, 'N/D')         AS BLOQUEADO,
+        NVL(A.USR_CODIGO, 'N/D')         AS USR,
+        NVL(A.USR_NOME, 'N/D')           AS NOME,
+        NVL(A.USR_EMAIL, 'N/D')          AS EMAIL,
+        NVL(A.USR_DEPTO, 'N/D')          AS DEPARTAMENTO,
+        NVL(A.USR_CARGO, 'N/D')          AS CARGO,
+        NVL(B.USR_SO_DOMINIO, 'N/D')     AS DOMINIO,
+        NVL(B.USR_SO_USERLOGIN, 'N/D')   AS AD,
+        NVL(A2.USR_CODIGO, 'N/D')        AS SUPERIOR
       FROM SYS_USR A
       LEFT JOIN SYS_USR_SSIGNON B
           ON A.USR_ID = B.USR_ID
@@ -74,6 +74,17 @@ app.get('/api/usuario', async (req, res) => {
     `;
 
     const result = await executeSQL(query);
+
+    req.session.ad = result.rows[0].ad.trim()
+    req.session.protheuscargo = result.rows[0].cargo.trim()
+    req.session.protheusdepartamento = result.rows[0].departamento.trim()
+    req.session.protheusdominio = result.rows[0].dominio.trim()
+    req.session.protheusemail = result.rows[0].email.trim()
+    req.session.protheusid = result.rows[0].id.trim()
+    req.session.protheusnome = result.rows[0].nome.trim()
+    req.session.protheussuperior = result.rows[0].superior.trim()
+    req.session.protheususer = result.rows[0].usr.trim()
+
     if (result.rows.length === 0)
       return res.status(404).json({ message: 'Usuário não encontrado' });
 
@@ -87,17 +98,37 @@ app.get('/api/usuario', async (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 
 app.get('/dashboard', (req, res) => {
-  if (!req.session.usuario) return res.redirect('/');
+  if (!req.session.ad) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
 app.post('/processos', async (req, res) => {
-  const { titulo, descricao, revisao, proxima_revisao } = req.body;
   try {
-    await executeSQL(`
-      INSERT INTO TSI_PROCESSOS (USUARIO, TITULO, DESCRICAO, DATA_INCLUSAO, REVISAO, PROXIMA_REVISAO)
-      VALUES (:usuario, :titulo, :descricao, SYSDATE, :revisao, ADD_MONTHS(SYSDATE, 6))
-    `, { usuario: req.session.usuario, titulo, descricao, revisao });
+    const sql = `
+      INSERT INTO TSI_PROCESSOS (
+        USUARIO,
+        TITULO,
+        DESCRICAO,
+        DATA_INCLUSAO,
+        REVISAO,
+        PROXIMA_REVISAO
+      )
+      VALUES (
+        :usuario,
+        :titulo,
+        :descricao,
+        SYSDATE,
+        :revisao,
+        ADD_MONTHS(SYSDATE, 6)
+      )
+    `;
+
+    await executeSQL(sql, {
+      usuario: req.body.userid,
+      titulo: req.body.titulo,
+      descricao: req.body.descricao,
+      revisao: req.body.revisao
+    });
 
     res.json({ success: true });
   } catch (err) {
@@ -107,7 +138,7 @@ app.post('/processos', async (req, res) => {
 });
 
 app.get('/meus-processos', async (req, res) => {
-  const usuario = req.session.usuario;
+  const usuario = req.session.protheusid;
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
 
   try {
@@ -118,6 +149,7 @@ app.get('/meus-processos', async (req, res) => {
             TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
+      AND D_E_L_E_T_ <> '*'
       ORDER BY DATA_INCLUSAO DESC
     `, { usuario });
 
@@ -158,7 +190,7 @@ app.post('/import-word', upload.single('word'), async (req, res) => {
 });
 
 app.get('/buscar-processos', async (req, res) => {
-  const usuario = req.session.usuario;
+  const usuario = req.session.ad;
   const q = req.query.q;
 
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
@@ -172,6 +204,7 @@ app.get('/buscar-processos', async (req, res) => {
              TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
+        AND D_E_L_E_T_ <> '*'
         AND (TITULO LIKE :q OR DESCRICAO LIKE :q)
       ORDER BY DATA_INCLUSAO DESC
     `, { usuario, q: `%${q}%` });
