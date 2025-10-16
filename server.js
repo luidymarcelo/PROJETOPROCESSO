@@ -1,4 +1,3 @@
-// server.js
 process.env.NODE_ENV = process.env.NODE_ENV || 'debug';
 
 const express = require('express');
@@ -137,19 +136,38 @@ app.post('/processos', async (req, res) => {
   }
 });
 
+app.put('/delete/:id', async (req, res) => {
+  const { id } = req.params;
+  const { D_E_L_E_T_ } = req.body;
+
+  try {
+    const result = await executeSQL(`
+      UPDATE TSI_PROCESSOS
+      SET D_E_L_E_T_ = :D_E_L_E_T_
+      WHERE ID = :ID
+    `, { D_E_L_E_T_, ID: id });
+
+    res.send('Processo marcado como excluído.');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro ao atualizar processo.');
+  }
+});
+
 app.get('/meus-processos', async (req, res) => {
   const usuario = req.session.protheusid;
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
 
   try {
     const result = await executeSQL(`
-      SELECT TITULO, DESCRICAO,
+      SELECT ID, TITULO, DESCRICAO,
             TO_CHAR(DATA_INCLUSAO, 'YYYY-MM-DD') AS DATA_INCLUSAO,
             REVISAO,
             TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
-      AND D_E_L_E_T_ <> '*'
+        AND ID IS NOT NULL
+        AND D_E_L_E_T_ <> '*'
       ORDER BY DATA_INCLUSAO DESC
     `, { usuario });
 
@@ -205,6 +223,7 @@ app.get('/buscar-processos', async (req, res) => {
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
         AND D_E_L_E_T_ <> '*'
+        AND ID IS NOT NULL
         AND (TITULO LIKE :q OR DESCRICAO LIKE :q)
       ORDER BY DATA_INCLUSAO DESC
     `, { usuario, q: `%${q}%` });

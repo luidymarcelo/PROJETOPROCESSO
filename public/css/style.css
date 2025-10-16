@@ -37,6 +37,24 @@ header {
   padding: 0 30px;
 }
 
+header nav a:last-child {
+  color: #ffffff;
+  background-color: transparent;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 400;
+  font-size: 13px;
+  font-family:  'Segoe UI', Tahoma, sans-serif;
+  text-decoration: none;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+header nav a:last-child:hover {
+  background-color: rgba(0, 113, 227, 0.1);
+  color: #ffffff;
+}
+
 .header-logo {
   display: flex;
   align-items: center;
@@ -71,12 +89,14 @@ section {
   border-radius: var(--radius);
   padding: var(--espaco);
   margin-bottom: var(--espaco);
+  box-sizing: border-box;
 }
 
 section h3 {
   margin-top: 0;
   color: var(--cor-primaria);
   font-size: 18px;
+  font-weight: 600;
   border-bottom: 1px solid var(--cor-borda);
   padding-bottom: 8px;
 }
@@ -163,7 +183,7 @@ tbody tr:last-child td { border-bottom: none; }
 .user-info .dept-line { display: block; font-size: 13px; opacity: 0.85; }
 
 /* ===============================
-   DISPLAY WORD / FLUXO (centralizado e limpo)
+   DISPLAY WORD / FLUXO
 ================================= */
 .display-box {
   position: fixed;
@@ -212,42 +232,6 @@ tbody tr:last-child td { border-bottom: none; }
   to { opacity: 1; transform: translate(-50%, -50%); }
 }
 
-/* Ajustes para o conteúdo do Word */
-#word-content img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: 10px 0;
-  text-align: center;
-}
-
-#word-content table {
-  width: 100% !important;
-  table-layout: auto;
-  border-collapse: collapse;
-}
-
-#word-content p {
-  line-height: 1.5;
-  margin: 8px 0;
-}
-
-#word-content h1, 
-#word-content h2, 
-#word-content h3, 
-#word-content h4, 
-#word-content h5, 
-#word-content h6 {
-  margin: 10px 0;
-}
-
-/* ===============================
-   RESPONSIVO
-================================= */
-@media(max-width: 900px) {
-  .display-box { width: 95%; height: 70%; padding: 15px; }
-}
-
 /* ===============================
    LOGIN PADRONIZADO
 ================================= */
@@ -267,7 +251,7 @@ body.login-body {
   box-shadow: 0 6px 20px rgba(0,0,0,0.2);
   text-align: center;
   width: 100%;
-  max-width: 400px; /* mesmo padrão de largura */
+  max-width: 400px;
   box-sizing: border-box;
 }
 
@@ -277,47 +261,119 @@ body.login-body {
   font-size: 22px;
 }
 
-/* Campos de input padronizados */
-.login-container input {
-  width: 100%; /* ocupa toda a largura do container */
+.login-container input,
+.login-container button {
+  width: 100%;
   padding: 12px 15px;
   margin: 8px 0;
+  border-radius: var(--radius);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* ===============================
+   NOVO PROCESSO — IDÊNTICO AO PADRÃO
+================================= */
+section.novo-processo {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto var(--espaco);
+  background: var(--cor-fundo-claro);
   border: 1px solid var(--cor-borda);
   border-radius: var(--radius);
-  outline: none;
-  font-size: 14px;
-  background: var(--cor-fundo-claro);
-  color: var(--cor-texto);
-  transition: border-color var(--transicao);
+  padding: var(--espaco);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
   box-sizing: border-box;
 }
 
-.login-container input:focus {
-  border-color: var(--cor-primaria);
+section.novo-processo h3 {
+  margin-top: 0;
+  color: var(--cor-primaria);
+  font-size: 18px; /* mesmo tamanho do "Processos Recentes" */
+  font-weight: 600;
+  border-bottom: 1px solid var(--cor-borda);
+  padding-bottom: 8px;
 }
 
-/* Botão padronizado */
-.login-container button {
-  width: 100%; /* mesma largura que os inputs */
-  padding: 12px;
+/* Campos e Labels */
+section.novo-processo label {
+  display: block;
+  font-weight: 600;
+  color: var(--cor-texto);
   margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+section.novo-processo input[type="text"],
+section.novo-processo input[type="number"],
+section.novo-processo input[type="date"],
+section.novo-processo input[type="file"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius);
+  background: var(--cor-fundo-claro);
+  font-size: 14px;
+  color: var(--cor-texto);
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+  box-sizing: border-box;
+}
+
+section.novo-processo input:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 4px rgba(0, 74, 173, 0.3);
+}
+
+/* Campo Descrição */
+#descricao {
+  min-height: 180px;
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--radius);
+  background: var(--cor-fundo-claro);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--cor-texto);
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+  outline: none;
+  box-sizing: border-box;
+}
+
+#descricao:focus-within {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 4px rgba(0, 74, 173, 0.3);
+}
+
+/* Botão principal */
+#salvar-processo {
+  margin-top: 20px;
   background-color: var(--cor-primaria);
   color: #fff;
+  font-weight: 600;
   border: none;
   border-radius: var(--radius);
-  cursor: pointer;
+  padding: 12px 18px;
   font-size: 15px;
+  cursor: pointer;
   transition: var(--transicao);
-  box-sizing: border-box;
+  width: 100%;
 }
 
-.login-container button:hover {
+#salvar-processo:hover {
   background-color: var(--cor-primaria-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 74, 173, 0.3);
 }
 
-/* Footer opcional */
-.login-container .footer {
-  margin-top: 15px;
-  font-size: 12px;
-  color: #666;
+#salvar-processo:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* ===============================
+   RESPONSIVO
+================================= */
+@media(max-width: 900px) {
+  .display-box { width: 95%; height: 70%; padding: 15px; }
+  section.novo-processo { padding: 15px; }
 }

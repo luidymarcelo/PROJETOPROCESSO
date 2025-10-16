@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         resultados.forEach(p => {
           const li = document.createElement('li');
-          li.innerHTML = `<strong>${p.titulo}</strong><br>Revisão: ${p.revisao || '-'} | Próxima: ${p.data_proxima_revisao || '-'}`;
+          li.innerHTML = `<strong>${p.id}</strong><strong>${p.titulo}</strong><br>Revisão: ${p.revisao || '-'} | Próxima: ${p.data_proxima_revisao || '-'}`;
           li.onclick = () => abrirword(p);
           resultadosUL.appendChild(li);
         });
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Erro: ' + erro);
         return;
       }
-      
+
       document.getElementById('titulo').value = '';
       document.getElementById('descricao').innerHTML = '';
       document.getElementById('revisao').value = '';
@@ -167,12 +167,44 @@ document.addEventListener('DOMContentLoaded', () => {
   function criarLinhaTabela(p) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td>${p.id}</td>
       <td>${p.titulo}</td>
       <td>${p.data_inclusao ? new Date(p.data_inclusao).toLocaleDateString() : '-'}</td>
       <td>${p.revisao || '-'}</td>
       <td>${p.proxima_revisao || '-'}</td>
+      <td>
+        <button class="btn-excluir" data-id="${p.id}">Excluir</button>
+      </td>
     `;
+
     tr.onclick = () => abrirword(p);
+
+    tr.querySelector('.btn-excluir').onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Deseja realmente excluir o processo "${p.titulo}"?`)) return;
+
+      try {
+        const res = await fetch(`/delete/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ D_E_L_E_T_: '*' })
+        });
+
+        if (!res.ok) {
+          const erro = await res.text();
+          alert('Erro ao excluir: ' + erro);
+          return;
+        }
+
+        // Atualiza tabela
+        await listarProcessos();
+        carregarRecentes();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao excluir processo.');
+      }
+    };
+
     return tr;
   }
 
