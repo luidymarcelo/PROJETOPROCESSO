@@ -229,7 +229,7 @@ app.post('/import-word', upload.single('word'), async (req, res) => {
 });
 
 app.get('/buscar-processos', async (req, res) => {
-  const usuario = req.session.ad;
+  const usuario = req.session.protheusid;
   const q = req.query.q;
 
   if (!usuario) return res.status(403).send('Usuário não autenticado.');

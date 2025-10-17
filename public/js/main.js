@@ -13,17 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultadosUL = document.getElementById('resultados-ul');
   const btnClear = document.getElementById('btn-clear');
   const inputProxRev = document.getElementById('data_proxima_revisao');
-  const btnTreinee = document.getElementById('btn-treinamentos');
+  const inputrevisao = document.getElementById('revisao');
+  const salvardoc = document.getElementById('btn-salvar-edicao')
 
-  if (inputProxRev) {
-    const hoje = new Date();
-    hoje.setMonth(hoje.getMonth() + 6);
-    inputProxRev.value = hoje.toISOString().split('T')[0];
-  }
+  const hoje = new Date();
 
   btnNovo.addEventListener('click', () => {
     novoProcesso.style.display = novoProcesso.style.display === 'none' ? 'block' : 'none';
     meusProcessos.style.display = 'none';
+    hoje.setMonth(hoje.getMonth() + 6);
+    inputProxRev.value = hoje.toISOString().split('T')[0];
+    inputrevisao.value = 1
   });
 
   btnMeus.addEventListener('click', async () => {
@@ -102,8 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       document.getElementById('titulo').value = '';
       document.getElementById('descricao').innerHTML = '';
-      document.getElementById('revisao').value = '';
-      document.getElementById('data_proxima_revisao').value = '';
       novoProcesso.style.display = 'none';
 
       await listarProcessos();
@@ -147,16 +145,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function editarProcesso(p) {
+    const dataProxima = new Date(p.proxima_revisao);
+    dataProxima.setMonth(dataProxima.getMonth() + 6);
+
     document.getElementById('display-editar').style.display = 'block';
 
     document.getElementById('editar-id').value = p.id;
     document.getElementById('editar-titulo').value = p.titulo;
     document.getElementById('editar-descricao').innerHTML = p.descricao || '';
-    document.getElementById('editar-revisao').value = p.revisao || '';
-    document.getElementById('editar-data_proxima_revisao').value = p.proxima_revisao || '';
+    document.getElementById('editar-revisao').value = p.revisao + 1 || '';
+    document.getElementById('editar-data_proxima_revisao').value = dataProxima.toISOString().split('T')[0];
   }
 
-  document.getElementById('btn-salvar-edicao').addEventListener('click', async () => {
+  salvardoc.addEventListener('click', async () => {
     const id = document.getElementById('editar-id').value;
     const titulo = document.getElementById('editar-titulo').value.trim();
     const descricao = document.getElementById('editar-descricao').innerHTML.trim();
