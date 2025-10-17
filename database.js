@@ -71,7 +71,7 @@ async function executeSQL(query, binds = {}, options = {}) {
           const value = row[key];
 
           if (value instanceof Date) {
-            obj[key.toLowerCase()] = value.toISOString().split('T')[0]; // datas
+            obj[key.toLowerCase()] = value.toISOString().split('T')[0];
           } else if (value && typeof value === 'object' && typeof value.getData === 'function') {
             obj[key.toLowerCase()] = await value.getData();
           } else {

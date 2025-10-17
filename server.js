@@ -154,6 +154,27 @@ app.put('/delete/:id', async (req, res) => {
   }
 });
 
+app.put('/editar/:id', async (req, res) => {
+  const { id } = req.params;
+  const { titulo, descricao, revisao, proxima_revisao } = req.body;
+
+  try {
+    await executeSQL(`
+      UPDATE TSI_PROCESSOS
+      SET TITULO = :titulo,
+          DESCRICAO = :descricao,
+          REVISAO = :revisao,
+          PROXIMA_REVISAO = TO_DATE(:proxima_revisao, 'YYYY-MM-DD')
+      WHERE ID = :id
+    `, { titulo, descricao, revisao, proxima_revisao, id });
+
+    res.send('Processo atualizado com sucesso.');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro ao atualizar processo.');
+  }
+});
+
 app.get('/meus-processos', async (req, res) => {
   const usuario = req.session.protheusid;
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
@@ -161,9 +182,9 @@ app.get('/meus-processos', async (req, res) => {
   try {
     const result = await executeSQL(`
       SELECT ID, TITULO, DESCRICAO,
-            TO_CHAR(DATA_INCLUSAO, 'YYYY-MM-DD') AS DATA_INCLUSAO,
+            DATA_INCLUSAO AS DATA_INCLUSAO,
             REVISAO,
-            TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
+            PROXIMA_REVISAO AS PROXIMA_REVISAO
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
         AND ID IS NOT NULL

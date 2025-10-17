@@ -81,11 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       console.error(e);
       alert('Erro ao salvar processo.');
+      return;
     }
 
     try {
-      const res = await fetch('/processos', {
-        method: 'POST',
+      const method = 'POST';
+      const url = '/processos/';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userid, titulo, descricao, revisao })
       });
@@ -142,13 +146,58 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('display-word').style.display = 'block';
   }
 
+  function editarProcesso(p) {
+    document.getElementById('display-editar').style.display = 'block';
+
+    document.getElementById('editar-id').value = p.id;
+    document.getElementById('editar-titulo').value = p.titulo;
+    document.getElementById('editar-descricao').innerHTML = p.descricao || '';
+    document.getElementById('editar-revisao').value = p.revisao || '';
+    document.getElementById('editar-data_proxima_revisao').value = p.proxima_revisao || '';
+  }
+
+  document.getElementById('btn-salvar-edicao').addEventListener('click', async () => {
+    const id = document.getElementById('editar-id').value;
+    const titulo = document.getElementById('editar-titulo').value.trim();
+    const descricao = document.getElementById('editar-descricao').innerHTML.trim();
+    const revisao = document.getElementById('editar-revisao').value.trim();
+    const proxima = document.getElementById('editar-data_proxima_revisao').value.trim();
+
+    if (!titulo) return alert('Digite o título do processo.');
+
+    try {
+      const res = await fetch(`/editar/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, descricao, revisao, proxima_revisao: proxima })
+      });
+
+      if (!res.ok) {
+        const erro = await res.text();
+        return alert('Erro ao atualizar: ' + erro);
+      }
+
+      fecharedit();
+      await listarProcessos();
+      carregarRecentes();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao atualizar processo.');
+    }
+  });
+
   function fecharWord() {
     document.getElementById('display-word').style.display = 'none';
+  }
+
+  function fecharedit() {
+    document.getElementById('display-editar').style.display = 'none';
   }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === "Escape") {
       fecharWord();
+      fecharedit();
     }
   });
 
@@ -171,14 +220,17 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${p.titulo}</td>
       <td>${p.data_inclusao ? new Date(p.data_inclusao).toLocaleDateString() : '-'}</td>
       <td>${p.revisao || '-'}</td>
-      <td>${p.proxima_revisao || '-'}</td>
+      <td>${p.proxima_revisao ? new Date(p.proxima_revisao).toLocaleDateString() : '-'}</td>
+      <td>
+        <button class="btn-editar" data-id="${p.id}">Editar</button>
+      </td>
       <td>
         <button class="btn-excluir" data-id="${p.id}">Excluir</button>
       </td>
     `;
 
     tr.onclick = () => abrirword(p);
-
+    
     tr.querySelector('.btn-excluir').onclick = async (e) => {
       e.stopPropagation();
       if (!confirm(`Deseja realmente excluir o processo "${p.titulo}"?`)) return;
@@ -189,20 +241,22 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ D_E_L_E_T_: '*' })
         });
-
         if (!res.ok) {
           const erro = await res.text();
           alert('Erro ao excluir: ' + erro);
           return;
         }
-
-        // Atualiza tabela
         await listarProcessos();
         carregarRecentes();
       } catch (err) {
         console.error(err);
         alert('Erro ao excluir processo.');
       }
+    };
+
+    tr.querySelector('.btn-editar').onclick = (e) => {
+      e.stopPropagation();
+      editarProcesso(p);
     };
 
     return tr;
