@@ -18,6 +18,7 @@
       <div id="user-info" class="user-info"></div>
     </h2>
     <nav>
+      <button id="btn-uso-comum">Uso Comum</button>
       <button id="btn-novo-processo">Novo Processo</button>
       <button id="btn-meus-processos">Meus Processos</button>
       <button id="btn-treinamentos">Treinamentos</button>
@@ -77,11 +78,31 @@
             <th>Data de Inclusão</th>
             <th>Revisão</th>
             <th>Próxima Revisão</th>
+            <th>Uso Comum</th>
             <th>Editar</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="tabela-meus-processos"></tbody>
+      </table>
+    </section>
+
+    <section class="tabela-uso-comum" id="tabela-uso-comum" style="display:none;">
+      <h3>Processos de Uso Comum</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Título</th>
+            <th>Data de Inclusão</th>
+            <th>Revisão</th>
+            <th>Próxima Revisão</th>
+            <th>Uso Comum</th>
+            <th>Editar</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabela-uso-comum-body"></tbody>
       </table>
     </section>
 
@@ -95,6 +116,7 @@
             <th>Data de Inclusão</th>
             <th>Revisão</th>
             <th>Próxima Revisão</th>
+            <th>Uso Comum</th>
             <th>Editar</th>
             <th></th>
           </tr>
@@ -132,4 +154,3 @@
   <script src="/js/main.js"></script>
 </body>
 </html>
->

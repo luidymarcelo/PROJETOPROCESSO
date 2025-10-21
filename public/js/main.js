@@ -1,9 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
   const btnNovo = document.getElementById('btn-novo-processo');
   const btnMeus = document.getElementById('btn-meus-processos');
+  const btnUsoComum = document.getElementById('btn-uso-comum');
   const novoProcesso = document.getElementById('novo-processo');
   const meusProcessos = document.getElementById('meus-processos');
   const tabelaMeus = document.getElementById('tabela-meus-processos');
+  const tabelaUsoComum = document.getElementById('tabela-uso-comum-body');
   const tabelaRecentes = document.getElementById('tabela-processos-recentes');
   const btnSalvar = document.getElementById('salvar-processo');
   const inputWord = document.getElementById('word-file');
@@ -14,21 +16,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnClear = document.getElementById('btn-clear');
   const inputProxRev = document.getElementById('data_proxima_revisao');
   const inputrevisao = document.getElementById('revisao');
-  const salvardoc = document.getElementById('btn-salvar-edicao')
-
-  const hoje = new Date();
+  const salvardoc = document.getElementById('btn-salvar-edicao');
 
   btnNovo.addEventListener('click', () => {
+    const hoje = new Date();
     novoProcesso.style.display = novoProcesso.style.display === 'none' ? 'block' : 'none';
     meusProcessos.style.display = 'none';
+    document.getElementById('tabela-uso-comum').style.display = 'none';
     hoje.setMonth(hoje.getMonth() + 6);
     inputProxRev.value = hoje.toISOString().split('T')[0];
-    inputrevisao.value = 1
+    inputrevisao.value = 1;
+  });
+
+  btnUsoComum.addEventListener('click', async () => {
+    document.getElementById('tabela-uso-comum').style.display =
+      document.getElementById('tabela-uso-comum').style.display === 'none' ? 'block' : 'none';
+    novoProcesso.style.display = 'none';
+    meusProcessos.style.display = 'none';
+    await carregarUsoComum();
   });
 
   btnMeus.addEventListener('click', async () => {
     meusProcessos.style.display = meusProcessos.style.display === 'none' ? 'block' : 'none';
     novoProcesso.style.display = 'none';
+    document.getElementById('tabela-uso-comum').style.display = 'none';
     await listarProcessos();
   });
 
@@ -47,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         resultados.forEach(p => {
           const li = document.createElement('li');
-          li.innerHTML = `<strong>${p.id}</strong><strong>${p.titulo}</strong><br>Revisão: ${p.revisao || '-'} | Próxima: ${p.data_proxima_revisao || '-'}`;
+          li.innerHTML = `<strong> ${p.id} - </strong><strong>${p.titulo}</strong><br>Revisão: ${p.revisao || '-'} | Próxima: ${p.proxima_revisao || '-'}`;
           li.onclick = () => abrirword(p);
           resultadosUL.appendChild(li);
         });
@@ -145,8 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function editarProcesso(p) {
-    const dataProxima = new Date(p.proxima_revisao);
-    dataProxima.setMonth(dataProxima.getMonth() + 6);
+    const hoje = new Date();
+    const dataProxima = new Date(hoje);
+    dataProxima.setMonth(hoje.getMonth() + 6);
 
     document.getElementById('display-editar').style.display = 'block';
 
@@ -222,11 +234,16 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${p.data_inclusao ? new Date(p.data_inclusao).toLocaleDateString() : '-'}</td>
       <td>${p.revisao || '-'}</td>
       <td>${p.proxima_revisao ? new Date(p.proxima_revisao).toLocaleDateString() : '-'}</td>
+      <td>${p.uso_comum}</td>
       <td>
-        <button class="btn-editar" data-id="${p.id}">Editar</button>
+        <button class="btn-editar" data-id="${p.id}" ${p.uso_comum === 'Sim' ? 'disabled' : ''}>
+          Editar
+        </button>
       </td>
       <td>
-        <button class="btn-excluir" data-id="${p.id}">Excluir</button>
+        <button class="btn-excluir" data-id="${p.id}" ${p.uso_comum === 'Sim' ? 'disabled' : ''}>
+          Excluir
+        </button>
       </td>
     `;
 
@@ -283,6 +300,17 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) { console.error(e); }
   }
 
+  async function carregarUsoComum() {
+    try {
+      const res = await fetch('/uso-comum');
+      if (!res.ok) return alert('Erro ao carregar processos de uso comum.');
+      const processos = await res.json();
+      tabelaUsoComum.innerHTML = '';
+      processos.forEach(p => tabelaUsoComum.appendChild(criarLinhaTabela(p)));
+    } catch (e) { console.error(e); }
+  }
+
   listarProcessos();
   carregarRecentes();
+  carregarUsoComum();
 });

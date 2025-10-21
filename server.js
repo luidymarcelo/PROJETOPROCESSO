@@ -184,13 +184,52 @@ app.get('/meus-processos', async (req, res) => {
       SELECT ID, TITULO, DESCRICAO,
             DATA_INCLUSAO AS DATA_INCLUSAO,
             REVISAO,
-            PROXIMA_REVISAO AS PROXIMA_REVISAO
+            PROXIMA_REVISAO AS PROXIMA_REVISAO,
+            CASE
+                WHEN UC = 1 THEN 'Sim'
+                WHEN UC = 2 THEN 'Não'
+                ELSE 'N/A'
+            END AS USO_COMUM
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
         AND ID IS NOT NULL
         AND D_E_L_E_T_ <> '*'
       ORDER BY DATA_INCLUSAO DESC
     `, { usuario });
+
+    // Garantir que descricao seja string
+    const processos = result.rows.map(p => ({
+      ...p,
+      descricao: p.descricao ? String(p.descricao) : ''
+    }));
+
+    res.json(processos);
+
+  } catch (err) {
+    console.error('[ERRO] ao buscar processos:', err);
+    res.status(500).send('Erro ao buscar processos');
+  }
+});
+
+app.get('/uso-comum', async (req, res) => {
+
+  try {
+    const result = await executeSQL(`
+      SELECT ID, TITULO, DESCRICAO,
+            DATA_INCLUSAO AS DATA_INCLUSAO,
+            REVISAO,
+            PROXIMA_REVISAO AS PROXIMA_REVISAO,
+            CASE
+                WHEN UC = 1 THEN 'Sim'
+                WHEN UC = 2 THEN 'Não'
+                ELSE 'N/A'
+            END AS USO_COMUM
+      FROM TSI_PROCESSOS
+      WHERE UC = '1'
+        AND ID IS NOT NULL
+        AND D_E_L_E_T_ <> '*'
+      ORDER BY DATA_INCLUSAO DESC
+    `);
 
     // Garantir que descricao seja string
     const processos = result.rows.map(p => ({
@@ -237,10 +276,15 @@ app.get('/buscar-processos', async (req, res) => {
 
   try {
     const result = await executeSQL(`
-      SELECT TITULO, DESCRICAO,
+      SELECT ID, TITULO, DESCRICAO,
              TO_CHAR(DATA_INCLUSAO, 'YYYY-MM-DD') AS DATA_INCLUSAO,
              REVISAO,
-             TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO
+             TO_CHAR(PROXIMA_REVISAO, 'YYYY-MM-DD') AS PROXIMA_REVISAO,
+             CASE
+                WHEN UC = 1 THEN 'Sim'
+                WHEN UC = 2 THEN 'Não'
+                ELSE 'N/A'
+             END AS USO_COMUM
       FROM TSI_PROCESSOS
       WHERE USUARIO = :usuario
         AND D_E_L_E_T_ <> '*'
