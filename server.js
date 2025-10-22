@@ -180,6 +180,7 @@ app.put('/editar/:id', async (req, res) => {
 
 app.get('/meus-processos', async (req, res) => {
   const usuario = req.session.protheusid;
+  const departamento = req.session.protheusdepartamento;
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
 
   try {
@@ -200,13 +201,12 @@ app.get('/meus-processos', async (req, res) => {
       ORDER BY DATA_INCLUSAO DESC
     `, { usuario });
 
-    // Garantir que descricao seja string
     const processos = result.rows.map(p => ({
       ...p,
       descricao: p.descricao ? String(p.descricao) : ''
     }));
 
-    res.json(processos);
+    res.json({ processos, departamento });
 
   } catch (err) {
     console.error('[ERRO] ao buscar processos:', err);

@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) throw new Error('Erro ao buscar usuário');
 
       const usuario = await response.json();
-      const departamento = usuario.departamento?.trim?.() || ''; // evita erro se undefined
+      const departamento = usuario.departamento?.trim?.() || '';
 
       console.log('Cargo do usuário:', departamento);
 
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) { console.error('Erro ao carregar dados do usuário:', err); }
   })();
 
-  function criarLinhaTabela(p) {
+  function criarLinhaTabela(p, departamento) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${p.id}</td>
@@ -259,19 +259,21 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${p.proxima_revisao ? new Date(p.proxima_revisao).toLocaleDateString() : '-'}</td>
       <td>${p.uso_comum}</td>
       <td>
-        <button class="btn-editar" data-id="${p.id}" ${p.uso_comum === 'Sim' ? 'disabled' : ''}>
+        <button class="btn-editar" data-id="${p.id}" 
+          ${p.uso_comum === 'Sim' && departamento !== 'TI' ? 'disabled' : ''}>
           Editar
         </button>
       </td>
       <td>
-        <button class="btn-excluir" data-id="${p.id}" ${p.uso_comum === 'Sim' ? 'disabled' : ''}>
+        <button class="btn-excluir" data-id="${p.id}" 
+          ${p.uso_comum === 'Sim' && departamento !== 'TI' ? 'disabled' : ''}>
           Excluir
         </button>
       </td>
     `;
 
     tr.onclick = () => abrirword(p);
-    
+
     tr.querySelector('.btn-excluir').onclick = async (e) => {
       e.stopPropagation();
       if (!confirm(`Deseja realmente excluir o processo "${p.titulo}"?`)) return;
@@ -295,22 +297,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    tr.querySelector('.btn-editar').onclick = (e) => {
-      e.stopPropagation();
-      editarProcesso(p);
-    };
-
     return tr;
   }
 
   async function listarProcessos() {
     try {
       const res = await fetch('/meus-processos');
-      if (!res.ok) return alert('Erro ao carregar processos.');
-      const processos = await res.json();
+      if (!res.ok) {
+        alert('Erro ao carregar processos.');
+        return;
+      }
+      const { processos, departamento } = await res.json(); // ← desestruturação
+      console.log('Departamento do usuário:', departamento);
       tabelaMeus.innerHTML = '';
-      processos.forEach(p => tabelaMeus.appendChild(criarLinhaTabela(p)));
-    } catch (e) { console.error(e); }
+      processos.forEach(p => tabelaMeus.appendChild(criarLinhaTabela(p, departamento)));
+    } catch (e) {
+      console.error('Erro ao listar processos:', e);
+    }
   }
 
   async function carregarRecentes() {
