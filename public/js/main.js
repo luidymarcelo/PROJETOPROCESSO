@@ -296,6 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Erro ao excluir processo.');
       }
     };
+    tr.querySelector('.btn-editar').onclick = (e) => {
+      e.stopPropagation();
+      editarProcesso(p);
+    };
 
     return tr;
   }
