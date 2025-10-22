@@ -320,9 +320,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/meus-processos');
       if (!res.ok) return;
-      const processos = await res.json();
+      const { processos, departamento } = await res.json();
       tabelaRecentes.innerHTML = '';
-      processos.slice(-5).reverse().forEach(p => tabelaRecentes.appendChild(criarLinhaTabela(p)));
+      processos.slice(-5).reverse().forEach(p => tabelaRecentes.appendChild(criarLinhaTabela(p, departamento)));
     } catch (e) { console.error(e); }
   }
 
