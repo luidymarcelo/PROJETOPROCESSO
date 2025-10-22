@@ -18,14 +18,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputrevisao = document.getElementById('revisao');
   const salvardoc = document.getElementById('btn-salvar-edicao');
 
-  btnNovo.addEventListener('click', () => {
+  btnNovo.addEventListener('click', async () => { // ← async adicionado
     const hoje = new Date();
-    novoProcesso.style.display = novoProcesso.style.display === 'none' ? 'block' : 'none';
+    novoProcesso.style.display = 'block';
     meusProcessos.style.display = 'none';
     document.getElementById('tabela-uso-comum').style.display = 'none';
+
     hoje.setMonth(hoje.getMonth() + 6);
     inputProxRev.value = hoje.toISOString().split('T')[0];
     inputrevisao.value = 1;
+
+    const selectUsoComum = document.getElementById('uso-comum');
+
+    try {
+      const response = await fetch('/api/usuario');
+      if (!response.ok) throw new Error('Erro ao buscar usuário');
+
+      const usuario = await response.json();
+      const departamento = usuario.departamento?.trim?.() || ''; // evita erro se undefined
+
+      console.log('Cargo do usuário:', departamento);
+
+      if (departamento !== 'TI') {
+        selectUsoComum.value = '2'; // '2' = Não
+        selectUsoComum.disabled = true;
+      } else {
+        selectUsoComum.disabled = false;
+      }
+    } catch (error) {
+      console.error('Erro ao obter o usuário:', error);
+    }
   });
 
   btnUsoComum.addEventListener('click', async () => {
@@ -81,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const titulo = document.getElementById('titulo').value.trim();
     const descricao = document.getElementById('descricao').innerHTML.trim();
     const revisao = document.getElementById('revisao').value.trim();
+    const usucomum = document.getElementById('uso-comum').value.trim();
 
     if (!titulo) return alert('Digite o título do processo.');
 
@@ -97,12 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const method = 'POST';
-      const url = '/processos/';
+      const url = '/documento/';
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userid, titulo, descricao, revisao })
+        body: JSON.stringify({ userid, titulo, descricao, revisao, usucomum })
       });
 
       if (!res.ok) {
@@ -313,4 +336,5 @@ document.addEventListener('DOMContentLoaded', () => {
   listarProcessos();
   carregarRecentes();
   carregarUsoComum();
+
 });

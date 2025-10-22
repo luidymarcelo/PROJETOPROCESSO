@@ -101,7 +101,7 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
-app.post('/processos', async (req, res) => {
+app.post('/documento', async (req, res) => {
   try {
     const sql = `
       INSERT INTO TSI_PROCESSOS (
@@ -110,7 +110,8 @@ app.post('/processos', async (req, res) => {
         DESCRICAO,
         DATA_INCLUSAO,
         REVISAO,
-        PROXIMA_REVISAO
+        PROXIMA_REVISAO,
+        UC
       )
       VALUES (
         :usuario,
@@ -118,7 +119,8 @@ app.post('/processos', async (req, res) => {
         :descricao,
         SYSDATE,
         :revisao,
-        ADD_MONTHS(SYSDATE, 6)
+        ADD_MONTHS(SYSDATE, 6),
+        :usucomum
       )
     `;
 
@@ -126,7 +128,8 @@ app.post('/processos', async (req, res) => {
       usuario: req.body.userid,
       titulo: req.body.titulo,
       descricao: req.body.descricao,
-      revisao: req.body.revisao
+      revisao: req.body.revisao,
+      usucomum: req.body.usucomum
     });
 
     res.json({ success: true });
