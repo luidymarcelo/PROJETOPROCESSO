@@ -18,17 +18,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputrevisao = document.getElementById('revisao');
   const salvardoc = document.getElementById('btn-salvar-edicao');
 
-  btnNovo.addEventListener('click', async () => { // ← async adicionado
+  btnNovo.addEventListener('click', async () => {
     const hoje = new Date();
+    const selectUsoComum = document.getElementById('uso-comum');
+    const tabelaUsoComum = document.getElementById('tabela-uso-comum');
+
+    const isVisible = novoProcesso.style.display === 'block';
+
+    if (isVisible) {
+      novoProcesso.style.display = 'none';
+      meusProcessos.style.display = 'block';
+      tabelaUsoComum.style.display = 'none';
+      return;
+    }
+
     novoProcesso.style.display = 'block';
     meusProcessos.style.display = 'none';
-    document.getElementById('tabela-uso-comum').style.display = 'none';
+    tabelaUsoComum.style.display = 'none';
 
     hoje.setMonth(hoje.getMonth() + 6);
     inputProxRev.value = hoje.toISOString().split('T')[0];
     inputrevisao.value = 1;
-
-    const selectUsoComum = document.getElementById('uso-comum');
 
     try {
       const response = await fetch('/api/usuario');
@@ -37,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const usuario = await response.json();
       const departamento = usuario.departamento?.trim?.() || '';
 
-      console.log('Cargo do usuário:', departamento);
+      console.log('Departamento do usuário:', departamento);
 
       if (departamento !== 'TI') {
         selectUsoComum.value = '2'; // '2' = Não
@@ -334,9 +344,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/uso-comum');
       if (!res.ok) return alert('Erro ao carregar processos de uso comum.');
-      const processos = await res.json();
+      const { processos, departamento } = await res.json();
       tabelaUsoComum.innerHTML = '';
-      processos.forEach(p => tabelaUsoComum.appendChild(criarLinhaTabela(p)));
+      processos.forEach(p => tabelaUsoComum.appendChild(criarLinhaTabela(p, departamento)));
     } catch (e) { console.error(e); }
   }
 

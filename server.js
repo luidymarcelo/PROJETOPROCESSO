@@ -215,7 +215,7 @@ app.get('/meus-processos', async (req, res) => {
 });
 
 app.get('/uso-comum', async (req, res) => {
-
+  const departamento = req.session.protheusdepartamento;
   try {
     const result = await executeSQL(`
       SELECT ID, TITULO, DESCRICAO,
@@ -240,7 +240,7 @@ app.get('/uso-comum', async (req, res) => {
       descricao: p.descricao ? String(p.descricao) : ''
     }));
 
-    res.json(processos);
+    res.json({ processos, departamento });
 
   } catch (err) {
     console.error('[ERRO] ao buscar processos:', err);
