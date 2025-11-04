@@ -72,6 +72,9 @@
         <option value="2">Não</option>
       </select>
 
+      <label for="tipo_doc" id="label-tipo-doc" style="display:none;">Tipo de Documento:</label>
+      <select id="tipo_doc" name="tipo_doc" style="display:none;"></select>
+
       <button id="salvar-processo">Salvar Processo</button>
     </section>
 
@@ -82,6 +85,7 @@
           <tr>
             <th>Id</th>
             <th>Título</th>
+            <th>Tipo Documento</th>
             <th>Data de Inclusão</th>
             <th>Revisão</th>
             <th>Próxima Revisão</th>
@@ -110,25 +114,6 @@
           </tr>
         </thead>
         <tbody id="tabela-uso-comum-body"></tbody>
-      </table>
-    </section>
-
-    <section class="processos-recentes">
-      <h3>Documentos Recentes</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Id</th>
-            <th>Título</th>
-            <th>Data de Inclusão</th>
-            <th>Revisão</th>
-            <th>Próxima Revisão</th>
-            <th>Uso Comum</th>
-            <th>Editar</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tabela-processos-recentes"></tbody>
       </table>
     </section>
   </main>

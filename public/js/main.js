@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const meusProcessos = document.getElementById('meus-processos');
   const tabelaMeus = document.getElementById('tabela-meus-processos');
   const tabelaUsoComum = document.getElementById('tabela-uso-comum-body');
-  const tabelaRecentes = document.getElementById('tabela-processos-recentes');
   const btnSalvar = document.getElementById('salvar-processo');
   const inputWord = document.getElementById('word-file');
   const buscaInput = document.getElementById('pesquisa');
@@ -35,6 +34,35 @@ document.addEventListener('DOMContentLoaded', () => {
     novoProcesso.style.display = 'block';
     meusProcessos.style.display = 'none';
     tabelaUsoComum.style.display = 'none';
+
+    // Exibe o campo de tipo de documento
+    document.getElementById('label-tipo-doc').style.display = 'block';
+    document.getElementById('tipo_doc').style.display = 'block';
+
+    // Carrega os tipos de documento do banco
+    try {
+      const res = await fetch('/doctipos');
+      if (!res.ok) throw new Error('Erro ao buscar tipos de documento');
+      const tipos = await res.json();
+
+      const selectTipo = document.getElementById('tipo_doc');
+      selectTipo.innerHTML = ''; // limpa opções antigas
+
+      const optionDefault = document.createElement('option');
+      optionDefault.value = '';
+      optionDefault.textContent = 'Selecione o tipo de documento';
+      selectTipo.appendChild(optionDefault);
+
+      tipos.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t.ID;
+        option.textContent = `${t.NOME} - ${t.DESCRICAO}`;
+        selectTipo.appendChild(option);
+      });
+    } catch (e) {
+      console.error('Erro ao carregar tipos de documento:', e);
+    }
+
 
     hoje.setMonth(hoje.getMonth() + 6);
     inputProxRev.value = hoje.toISOString().split('T')[0];
@@ -114,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const descricao = document.getElementById('descricao').innerHTML.trim();
     const revisao = document.getElementById('revisao').value.trim();
     const usucomum = document.getElementById('uso-comum').value.trim();
+    const tipo_doc = document.getElementById('tipo_doc').value;
 
     if (!titulo) return alert('Digite o título do processo.');
 
@@ -135,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userid, titulo, descricao, revisao, usucomum })
+        body: JSON.stringify({ userid, titulo, descricao, revisao, usucomum, tipo_doc })
       });
 
       if (!res.ok) {
@@ -149,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
       novoProcesso.style.display = 'none';
 
       await listarProcessos();
-      carregarRecentes();
     } catch (e) {
       console.error(e);
       alert('Erro ao salvar processo.');
@@ -225,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       fecharedit();
       await listarProcessos();
-      carregarRecentes();
     } catch (err) {
       console.error(err);
       alert('Erro ao atualizar processo.');
@@ -264,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tr.innerHTML = `
       <td>${p.id}</td>
       <td>${p.titulo}</td>
+      <td>${p.tipo_documento}</td>
       <td>${p.data_inclusao ? new Date(p.data_inclusao).toLocaleDateString() : '-'}</td>
       <td>${p.revisao || '-'}</td>
       <td>${p.proxima_revisao ? new Date(p.proxima_revisao).toLocaleDateString() : '-'}</td>
@@ -300,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
         await listarProcessos();
-        carregarRecentes();
       } catch (err) {
         console.error(err);
         alert('Erro ao excluir processo.');
@@ -321,23 +348,13 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Erro ao carregar processos.');
         return;
       }
-      const { processos, departamento } = await res.json(); // ← desestruturação
+      const { processos, departamento } = await res.json();
       console.log('Departamento do usuário:', departamento);
       tabelaMeus.innerHTML = '';
       processos.forEach(p => tabelaMeus.appendChild(criarLinhaTabela(p, departamento)));
     } catch (e) {
       console.error('Erro ao listar processos:', e);
     }
-  }
-
-  async function carregarRecentes() {
-    try {
-      const res = await fetch('/meus-processos');
-      if (!res.ok) return;
-      const { processos, departamento } = await res.json();
-      tabelaRecentes.innerHTML = '';
-      processos.slice(-5).reverse().forEach(p => tabelaRecentes.appendChild(criarLinhaTabela(p, departamento)));
-    } catch (e) { console.error(e); }
   }
 
   async function carregarUsoComum() {
@@ -350,8 +367,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) { console.error(e); }
   }
 
-  listarProcessos();
-  carregarRecentes();
   carregarUsoComum();
 
 });

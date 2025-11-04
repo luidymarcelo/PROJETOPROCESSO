@@ -111,7 +111,8 @@ app.post('/documento', async (req, res) => {
         DATA_INCLUSAO,
         REVISAO,
         PROXIMA_REVISAO,
-        UC
+        UC,
+        ID_TIPODOC
       )
       VALUES (
         :usuario,
@@ -120,7 +121,8 @@ app.post('/documento', async (req, res) => {
         SYSDATE,
         :revisao,
         ADD_MONTHS(SYSDATE, 6),
-        :usucomum
+        :usucomum,
+        :tipo_doc
       )
     `;
 
@@ -129,7 +131,8 @@ app.post('/documento', async (req, res) => {
       titulo: req.body.titulo,
       descricao: req.body.descricao,
       revisao: req.body.revisao,
-      usucomum: req.body.usucomum
+      usucomum: req.body.usucomum,
+      tipo_doc: req.body.tipo_doc
     });
 
     res.json({ success: true });
@@ -185,20 +188,27 @@ app.get('/meus-processos', async (req, res) => {
 
   try {
     const result = await executeSQL(`
-      SELECT ID, TITULO, DESCRICAO,
-            DATA_INCLUSAO AS DATA_INCLUSAO,
-            REVISAO,
-            PROXIMA_REVISAO AS PROXIMA_REVISAO,
+        SELECT 
+            P.ID,
+            P.TITULO,
+            T.NOME AS TIPO_DOCUMENTO,
+            P.DATA_INCLUSAO AS DATA_INCLUSAO,
+            P.REVISAO,
+            P.PROXIMA_REVISAO AS PROXIMA_REVISAO,
             CASE
-                WHEN UC = 1 THEN 'Sim'
-                WHEN UC = 2 THEN 'Não'
+                WHEN P.UC = 1 THEN 'Sim'
+                WHEN P.UC = 2 THEN 'Não'
                 ELSE 'N/A'
             END AS USO_COMUM
-      FROM TSI_PROCESSOS
-      WHERE USUARIO = :usuario
-        AND ID IS NOT NULL
-        AND D_E_L_E_T_ <> '*'
-      ORDER BY DATA_INCLUSAO DESC
+        FROM 
+            TSI_PROCESSOS P
+            LEFT JOIN TSI_TIPODOC T ON T.ID = P.ID_TIPODOC
+        WHERE 
+            P.USUARIO = :usuario
+            AND P.ID IS NOT NULL
+            AND P.D_E_L_E_T_ <> '*'
+        ORDER BY 
+            P.DATA_INCLUSAO DESC
     `, { usuario });
 
     const processos = result.rows.map(p => ({
@@ -305,6 +315,34 @@ app.get('/buscar-processos', async (req, res) => {
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/'));
+});
+
+app.get('/doctipos', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        ID,
+        NOME,
+        DESCRICAO
+      FROM TSI_TIPODOC
+      ORDER BY NOME
+    `;
+
+    const result = await executeSQL(sql);
+
+    // Acessa por nomes de coluna, não índices
+    const doctipos = result.rows.map(row => ({
+      ID: row.ID || row.id,
+      NOME: row.NOME || row.nome,
+      DESCRICAO: row.DESCRICAO || row.descricao
+    }));
+
+    res.json(doctipos);
+
+  } catch (err) {
+    console.error('[ERRO] ao buscar tipos de documento:', err);
+    res.status(500).send('Erro ao buscar tipos de documento');
+  }
 });
 
 const PORT = 3000;
