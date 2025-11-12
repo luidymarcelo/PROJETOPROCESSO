@@ -18,75 +18,109 @@ document.addEventListener('DOMContentLoaded', () => {
   const salvardoc = document.getElementById('btn-salvar-edicao');
 
   btnNovo.addEventListener('click', async () => {
-    const hoje = new Date();
-    const selectUsoComum = document.getElementById('uso-comum');
-    const tabelaUsoComum = document.getElementById('tabela-uso-comum');
+  const hoje = new Date();
+  const selectUsoComum = document.getElementById('uso-comum');
+  const tabelaUsoComum = document.getElementById('tabela-uso-comum');
+  const defineusuario = document.getElementById('usuario_doc');
 
-    const isVisible = novoProcesso.style.display === 'block';
+  const isVisible = novoProcesso.style.display === 'block';
 
-    if (isVisible) {
-      novoProcesso.style.display = 'none';
-      meusProcessos.style.display = 'block';
-      tabelaUsoComum.style.display = 'none';
-      return;
-    }
-
-    novoProcesso.style.display = 'block';
-    meusProcessos.style.display = 'none';
+  if (isVisible) {
+    novoProcesso.style.display = 'none';
+    meusProcessos.style.display = 'block';
     tabelaUsoComum.style.display = 'none';
+    return;
+  }
 
-    // Exibe o campo de tipo de documento
-    document.getElementById('label-tipo-doc').style.display = 'block';
-    document.getElementById('tipo_doc').style.display = 'block';
+  // Exibe a tela de novo documento
+  novoProcesso.style.display = 'block';
+  meusProcessos.style.display = 'none';
+  tabelaUsoComum.style.display = 'none';
 
-    // Carrega os tipos de documento do banco
-    try {
-      const res = await fetch('/doctipos');
-      if (!res.ok) throw new Error('Erro ao buscar tipos de documento');
-      const tipos = await res.json();
+  // Mostra os campos de tipo e usuário
+  document.getElementById('label-tipo-doc').style.display = 'block';
+  document.getElementById('tipo_doc').style.display = 'block';
+  document.getElementById('label-usuario_doc').style.display = 'block';
+  document.getElementById('usuario_doc').style.display = 'block';
 
-      const selectTipo = document.getElementById('tipo_doc');
-      selectTipo.innerHTML = ''; // limpa opções antigas
+  // Preenche tipos de documento
+  try {
+    const res = await fetch('/doctipos');
+    if (!res.ok) throw new Error('Erro ao buscar tipos de documento');
+    const tipos = await res.json();
 
-      const optionDefault = document.createElement('option');
-      optionDefault.value = '';
-      optionDefault.textContent = 'Selecione o tipo de documento';
-      selectTipo.appendChild(optionDefault);
+    const selectTipo = document.getElementById('tipo_doc');
+    selectTipo.innerHTML = '';
 
-      tipos.forEach(t => {
-        const option = document.createElement('option');
-        option.value = t.ID;
-        option.textContent = `${t.NOME} - ${t.DESCRICAO}`;
-        selectTipo.appendChild(option);
-      });
-    } catch (e) {
-      console.error('Erro ao carregar tipos de documento:', e);
+    const optionDefault = document.createElement('option');
+    optionDefault.value = '';
+    optionDefault.textContent = 'Selecione o tipo de documento';
+    selectTipo.appendChild(optionDefault);
+
+    tipos.forEach(t => {
+      const option = document.createElement('option');
+      option.value = t.ID;
+      option.textContent = `${t.NOME} - ${t.DESCRICAO}`;
+      selectTipo.appendChild(option);
+    });
+  } catch (e) {
+    console.error('Erro ao carregar tipos de documento:', e);
+  }
+
+  // Define datas e revisão
+  hoje.setMonth(hoje.getMonth() + 6);
+  inputProxRev.value = hoje.toISOString().split('T')[0];
+  inputrevisao.value = 1;
+
+  // 🔽 Carrega usuários e define permissões
+  console.log('Iniciando carregamento de usuários...');
+  let departamento = '';
+  let idusuario = '';
+
+  try {
+    // Busca lista de usuários
+    const response = await fetch('/api/usuarios');
+    if (!response.ok) throw new Error('Erro ao buscar usuários');
+    const usuarios = await response.json();
+
+    // Busca usuário logado
+    const responseLogado = await fetch('/api/usuario_logado');
+    if (!responseLogado.ok) throw new Error('Erro ao buscar usuário logado');
+    const usuarioLogado = await responseLogado.json();
+
+    departamento = usuarioLogado.departamento?.trim?.() || '';
+    idusuario = usuarioLogado.id?.trim?.() || '';
+
+    const selectuser = document.getElementById('usuario_doc');
+    selectuser.innerHTML = '';
+
+    console.log('Usuário logado:', usuarioLogado);
+    console.log('Departamento:', departamento);
+
+    usuarios.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = `${u.nome} - ${u.departamento}`;
+      selectuser.appendChild(opt);
+    });
+
+    if (departamento !== 'TI') {
+      selectuser.value = idusuario;
+      selectuser.disabled = true;
     }
 
+    console.log('Execução concluída com sucesso');
+  } catch (error) {
+    console.error('Erro no carregamento:', error);
+  }
 
-    hoje.setMonth(hoje.getMonth() + 6);
-    inputProxRev.value = hoje.toISOString().split('T')[0];
-    inputrevisao.value = 1;
-
-    try {
-      const response = await fetch('/api/usuario');
-      if (!response.ok) throw new Error('Erro ao buscar usuário');
-
-      const usuario = await response.json();
-      const departamento = usuario.departamento?.trim?.() || '';
-
-      console.log('Departamento do usuário:', departamento);
-
-      if (departamento !== 'TI') {
-        selectUsoComum.value = '2'; // '2' = Não
-        selectUsoComum.disabled = true;
-      } else {
-        selectUsoComum.disabled = false;
-      }
-    } catch (error) {
-      console.error('Erro ao obter o usuário:', error);
-    }
-  });
+  if (departamento !== 'TI') {
+    selectUsoComum.value = '2'; // '2' = Não
+    selectUsoComum.disabled = true;
+  } else {
+    selectUsoComum.disabled = false;
+  }
+});
 
   btnUsoComum.addEventListener('click', async () => {
     document.getElementById('tabela-uso-comum').style.display =
@@ -143,19 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const revisao = document.getElementById('revisao').value.trim();
     const usucomum = document.getElementById('uso-comum').value.trim();
     const tipo_doc = document.getElementById('tipo_doc').value;
+    const user = document.getElementById('usuario_doc').value;
 
     if (!titulo) return alert('Digite o título do processo.');
-
-    try {
-      const userRes = await fetch('/api/usuario');
-      if (!userRes.ok) return console.warn('Não foi possível carregar usuário.');
-      const usuario = await userRes.json();
-      var userid = usuario.id
-    } catch (e) {
-      console.error(e);
-      alert('Erro ao salvar processo.');
-      return;
-    }
 
     try {
       const method = 'POST';
@@ -164,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userid, titulo, descricao, revisao, usucomum, tipo_doc })
+        body: JSON.stringify({ user, titulo, descricao, revisao, usucomum, tipo_doc })
       });
 
       if (!res.ok) {
@@ -276,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   (async () => {
     try {
-      const res = await fetch('/api/usuario');
+      const res = await fetch('/api/usuario_logado');
       if (!res.ok) return console.warn('Não foi possível carregar usuário.');
       const usuario = await res.json();
       const userInfoDiv = document.getElementById('user-info');

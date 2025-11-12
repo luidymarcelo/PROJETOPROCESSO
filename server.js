@@ -39,7 +39,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.get('/api/usuario', async (req, res) => {
+app.get('/api/usuario_logado', async (req, res) => {
   try {
     const adUser = req.session.ad;
     if (!adUser) return res.status(401).json({ message: 'Usuário não autenticado' });
@@ -94,6 +94,47 @@ app.get('/api/usuario', async (req, res) => {
   }
 });
 
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        NVL(A.USR_ID, 'N/D')             AS ID,
+        NVL(A.USR_MSBLQL, 'N/D')         AS BLOQUEADO,
+        NVL(A.USR_CODIGO, 'N/D')         AS USR,
+        NVL(A.USR_NOME, 'N/D')           AS NOME,
+        NVL(A.USR_EMAIL, 'N/D')          AS EMAIL,
+        NVL(A.USR_DEPTO, 'N/D')          AS DEPARTAMENTO,
+        NVL(A.USR_CARGO, 'N/D')          AS CARGO,
+        NVL(B.USR_SO_DOMINIO, 'N/D')     AS DOMINIO,
+        NVL(B.USR_SO_USERLOGIN, 'N/D')   AS AD,
+        NVL(A2.USR_CODIGO, 'N/D')        AS SUPERIOR
+      FROM SYS_USR A
+      LEFT JOIN SYS_USR_SSIGNON B
+          ON A.USR_ID = B.USR_ID
+          AND B.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_USR_SUPER C
+          ON A.USR_ID = C.USR_ID
+          AND C.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_USR A2
+          ON C.USR_SUPER = A2.USR_ID
+          AND A2.D_E_L_E_T_ <> '*'
+      WHERE 
+          A.USR_MSBLQL = '2'
+          AND A.D_E_L_E_T_ <> '*'
+    `;
+
+    const result = await executeSQL(query);
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: 'Nenhum usuário encontrado' });
+
+    res.json(result.rows); // 🔥 Retorna todos os usuários!
+  } catch (err) {
+    console.error('[API] Erro ao buscar usuários:', err);
+    res.status(500).json({ message: 'Erro interno ao buscar usuários' });
+  }
+});
+
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 
 app.get('/dashboard', (req, res) => {
@@ -127,7 +168,7 @@ app.post('/documento', async (req, res) => {
     `;
 
     await executeSQL(sql, {
-      usuario: req.body.userid,
+      usuario: req.body.user,
       titulo: req.body.titulo,
       descricao: req.body.descricao,
       revisao: req.body.revisao,
