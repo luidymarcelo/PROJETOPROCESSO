@@ -32,18 +32,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Exibe a tela de novo documento
   novoProcesso.style.display = 'block';
   meusProcessos.style.display = 'none';
   tabelaUsoComum.style.display = 'none';
 
-  // Mostra os campos de tipo e usuário
   document.getElementById('label-tipo-doc').style.display = 'block';
   document.getElementById('tipo_doc').style.display = 'block';
   document.getElementById('label-usuario_doc').style.display = 'block';
   document.getElementById('usuario_doc').style.display = 'block';
+  document.getElementById('label-departamento_doc').style.display = 'block';
+  document.getElementById('departamento_doc').style.display = 'block';
 
-  // Preenche tipos de documento
   try {
     const res = await fetch('/doctipos');
     if (!res.ok) throw new Error('Erro ao buscar tipos de documento');
@@ -72,41 +71,56 @@ document.addEventListener('DOMContentLoaded', () => {
   inputProxRev.value = hoje.toISOString().split('T')[0];
   inputrevisao.value = 1;
 
-  // 🔽 Carrega usuários e define permissões
   console.log('Iniciando carregamento de usuários...');
   let departamento = '';
   let idusuario = '';
+  let grupo = '';
 
   try {
-    // Busca lista de usuários
     const response = await fetch('/api/usuarios');
     if (!response.ok) throw new Error('Erro ao buscar usuários');
     const usuarios = await response.json();
 
-    // Busca usuário logado
     const responseLogado = await fetch('/api/usuario_logado');
     if (!responseLogado.ok) throw new Error('Erro ao buscar usuário logado');
     const usuarioLogado = await responseLogado.json();
 
     departamento = usuarioLogado.departamento?.trim?.() || '';
     idusuario = usuarioLogado.id?.trim?.() || '';
+    grupo = usuarioLogado.grupo?.trim?.() || '';
 
     const selectuser = document.getElementById('usuario_doc');
     selectuser.innerHTML = '';
 
-    console.log('Usuário logado:', usuarioLogado);
-    console.log('Departamento:', departamento);
+    let usuariosFiltrados = usuarios;
 
-    usuarios.forEach(u => {
+    if (grupo !== 'Administradores') {
+      usuariosFiltrados = usuarios.filter(u =>
+        (u.departamento || '').trim().toLowerCase() === departamento.trim().toLowerCase()
+      );
+    }
+
+    usuariosFiltrados.forEach(u => {
       const opt = document.createElement('option');
       opt.value = u.id;
-      opt.textContent = `${u.nome} - ${u.departamento}`;
+      opt.textContent = `${u.nome}`;
+      opt.dataset.departamento = u.departamento || '';
       selectuser.appendChild(opt);
     });
 
-    if (departamento !== 'TI') {
+    selectuser.addEventListener('change', () => {
+      const selected = selectuser.options[selectuser.selectedIndex];
+      document.getElementById('departamento_doc').value = selected.dataset.departamento || '';
+    });
+
+    if (grupo == 'N/D' || grupo == '*') {
       selectuser.value = idusuario;
       selectuser.disabled = true;
+
+      const selected = selectuser.options[selectuser.selectedIndex];
+      if (selected) {
+        document.getElementById('departamento_doc').value = selected.dataset.departamento || '';
+      }
     }
 
     console.log('Execução concluída com sucesso');
@@ -114,17 +128,17 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Erro no carregamento:', error);
   }
 
-  if (departamento !== 'TI') {
+  if (grupo !== 'Administradores') {
     selectUsoComum.value = '2'; // '2' = Não
     selectUsoComum.disabled = true;
   } else {
     selectUsoComum.disabled = false;
   }
-});
+  });
 
   btnUsoComum.addEventListener('click', async () => {
     document.getElementById('tabela-uso-comum').style.display =
-      document.getElementById('tabela-uso-comum').style.display === 'none' ? 'block' : 'none';
+    document.getElementById('tabela-uso-comum').style.display === 'none' ? 'block' : 'none';
     novoProcesso.style.display = 'none';
     meusProcessos.style.display = 'none';
     await carregarUsoComum();
@@ -178,6 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const usucomum = document.getElementById('uso-comum').value.trim();
     const tipo_doc = document.getElementById('tipo_doc').value;
     const user = document.getElementById('usuario_doc').value;
+
+    if (!tipo_doc) return alert('Digite o tipo de documento.');
 
     if (!titulo) return alert('Digite o título do processo.');
 
@@ -310,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) { console.error('Erro ao carregar dados do usuário:', err); }
   })();
 
-  function criarLinhaTabela(p, departamento) {
+  function criarLinhaTabela(p, grupo) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${p.id}</td>
@@ -322,13 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${p.uso_comum}</td>
       <td>
         <button class="btn-editar" data-id="${p.id}" 
-          ${p.uso_comum === 'Sim' && departamento !== 'TI' ? 'disabled' : ''}>
+          ${p.uso_comum === 'Sim' && grupo !== 'Administradores' ? 'disabled' : ''}>
           Editar
         </button>
       </td>
       <td>
         <button class="btn-excluir" data-id="${p.id}" 
-          ${p.uso_comum === 'Sim' && departamento !== 'TI' ? 'disabled' : ''}>
+          ${p.uso_comum === 'Sim' && grupo !== 'Administradores' ? 'disabled' : ''}>
           Excluir
         </button>
       </td>
@@ -368,26 +384,20 @@ document.addEventListener('DOMContentLoaded', () => {
   async function listarProcessos() {
     try {
       const res = await fetch('/meus-processos');
-      if (!res.ok) {
-        alert('Erro ao carregar processos.');
-        return;
-      }
-      const { processos, departamento } = await res.json();
-      console.log('Departamento do usuário:', departamento);
+      if (!res.ok) return alert('Erro ao carregar processos.');
+      const { processos, grupo } = await res.json();
       tabelaMeus.innerHTML = '';
-      processos.forEach(p => tabelaMeus.appendChild(criarLinhaTabela(p, departamento)));
-    } catch (e) {
-      console.error('Erro ao listar processos:', e);
-    }
+      processos.forEach(p => tabelaMeus.appendChild(criarLinhaTabela(p, grupo)));
+    } catch (e) { console.error(e); }
   }
 
   async function carregarUsoComum() {
     try {
       const res = await fetch('/uso-comum');
       if (!res.ok) return alert('Erro ao carregar processos de uso comum.');
-      const { processos, departamento } = await res.json();
+      const { processos, grupo } = await res.json();
       tabelaUsoComum.innerHTML = '';
-      processos.forEach(p => tabelaUsoComum.appendChild(criarLinhaTabela(p, departamento)));
+      processos.forEach(p => tabelaUsoComum.appendChild(criarLinhaTabela(p, grupo)));
     } catch (e) { console.error(e); }
   }
 

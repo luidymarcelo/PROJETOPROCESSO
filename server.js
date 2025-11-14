@@ -55,17 +55,24 @@ app.get('/api/usuario_logado', async (req, res) => {
         NVL(A.USR_CARGO, 'N/D')          AS CARGO,
         NVL(B.USR_SO_DOMINIO, 'N/D')     AS DOMINIO,
         NVL(B.USR_SO_USERLOGIN, 'N/D')   AS AD,
-        NVL(A2.USR_CODIGO, 'N/D')        AS SUPERIOR
-      FROM SYS_USR A
-      LEFT JOIN SYS_USR_SSIGNON B
+        NVL(A2.USR_CODIGO, 'N/D')        AS SUPERIOR,
+        NVL(A3.GR__CODIGO, 'N/D')        AS GRUPO
+      FROM SYS_USR                      A
+      LEFT JOIN SYS_USR_SSIGNON         B
           ON A.USR_ID = B.USR_ID
           AND B.D_E_L_E_T_ <> '*'
-      LEFT JOIN SYS_USR_SUPER C
+      LEFT JOIN SYS_USR_SUPER           C
           ON A.USR_ID = C.USR_ID
           AND C.D_E_L_E_T_ <> '*'
-      LEFT JOIN SYS_USR A2
+      LEFT JOIN SYS_USR_GROUPS          D
+          ON A.USR_ID = D.USR_ID
+          AND D.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_USR                 A2
           ON C.USR_SUPER = A2.USR_ID
           AND A2.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_GRP_GROUP           A3
+          ON D.USR_GRUPO = A3.GR__ID
+          AND A3.D_E_L_E_T_ <> '*'
       WHERE 
           A.USR_MSBLQL = '2'
           AND A.D_E_L_E_T_ <> '*'
@@ -83,6 +90,7 @@ app.get('/api/usuario_logado', async (req, res) => {
     req.session.protheusnome = result.rows[0].nome.trim()
     req.session.protheussuperior = result.rows[0].superior.trim()
     req.session.protheususer = result.rows[0].usr.trim()
+    req.session.protheusgrupo = result.rows[0].grupo.trim()
 
     if (result.rows.length === 0)
       return res.status(404).json({ message: 'Usuário não encontrado' });
@@ -107,17 +115,24 @@ app.get('/api/usuarios', async (req, res) => {
         NVL(A.USR_CARGO, 'N/D')          AS CARGO,
         NVL(B.USR_SO_DOMINIO, 'N/D')     AS DOMINIO,
         NVL(B.USR_SO_USERLOGIN, 'N/D')   AS AD,
-        NVL(A2.USR_CODIGO, 'N/D')        AS SUPERIOR
-      FROM SYS_USR A
-      LEFT JOIN SYS_USR_SSIGNON B
+        NVL(A2.USR_CODIGO, 'N/D')        AS SUPERIOR,
+        NVL(A3.GR__CODIGO, 'N/D')        AS GRUPO
+      FROM SYS_USR                      A
+      LEFT JOIN SYS_USR_SSIGNON         B
           ON A.USR_ID = B.USR_ID
           AND B.D_E_L_E_T_ <> '*'
-      LEFT JOIN SYS_USR_SUPER C
+      LEFT JOIN SYS_USR_SUPER           C
           ON A.USR_ID = C.USR_ID
           AND C.D_E_L_E_T_ <> '*'
-      LEFT JOIN SYS_USR A2
+      LEFT JOIN SYS_USR_GROUPS          D
+          ON A.USR_ID = D.USR_ID
+          AND D.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_USR                 A2
           ON C.USR_SUPER = A2.USR_ID
           AND A2.D_E_L_E_T_ <> '*'
+      LEFT JOIN SYS_GRP_GROUP           A3
+          ON D.USR_GRUPO = A3.GR__ID
+          AND A3.D_E_L_E_T_ <> '*'
       WHERE 
           A.USR_MSBLQL = '2'
           AND A.D_E_L_E_T_ <> '*'
@@ -128,7 +143,7 @@ app.get('/api/usuarios', async (req, res) => {
     if (result.rows.length === 0)
       return res.status(404).json({ message: 'Nenhum usuário encontrado' });
 
-    res.json(result.rows); // 🔥 Retorna todos os usuários!
+    res.json(result.rows);
   } catch (err) {
     console.error('[API] Erro ao buscar usuários:', err);
     res.status(500).json({ message: 'Erro interno ao buscar usuários' });
@@ -224,7 +239,7 @@ app.put('/editar/:id', async (req, res) => {
 
 app.get('/meus-processos', async (req, res) => {
   const usuario = req.session.protheusid;
-  const departamento = req.session.protheusdepartamento;
+  const grupo = req.session.protheusgrupo;
   if (!usuario) return res.status(403).send('Usuário não autenticado.');
 
   try {
@@ -232,6 +247,7 @@ app.get('/meus-processos', async (req, res) => {
         SELECT 
             P.ID,
             P.TITULO,
+            P.DESCRICAO,
             T.NOME AS TIPO_DOCUMENTO,
             P.DATA_INCLUSAO AS DATA_INCLUSAO,
             P.REVISAO,
@@ -257,7 +273,7 @@ app.get('/meus-processos', async (req, res) => {
       descricao: p.descricao ? String(p.descricao) : ''
     }));
 
-    res.json({ processos, departamento });
+    res.json({ processos, grupo });
 
   } catch (err) {
     console.error('[ERRO] ao buscar processos:', err);
@@ -266,32 +282,39 @@ app.get('/meus-processos', async (req, res) => {
 });
 
 app.get('/uso-comum', async (req, res) => {
-  const departamento = req.session.protheusdepartamento;
+  const grupo = req.session.protheusgrupo;
   try {
     const result = await executeSQL(`
-      SELECT ID, TITULO, DESCRICAO,
-            DATA_INCLUSAO AS DATA_INCLUSAO,
-            REVISAO,
-            PROXIMA_REVISAO AS PROXIMA_REVISAO,
+        SELECT 
+            P.ID,
+            P.TITULO,
+            P.DESCRICAO,
+            T.NOME AS TIPO_DOCUMENTO,
+            P.DATA_INCLUSAO AS DATA_INCLUSAO,
+            P.REVISAO,
+            P.PROXIMA_REVISAO AS PROXIMA_REVISAO,
             CASE
-                WHEN UC = 1 THEN 'Sim'
-                WHEN UC = 2 THEN 'Não'
+                WHEN P.UC = 1 THEN 'Sim'
+                WHEN P.UC = 2 THEN 'Não'
                 ELSE 'N/A'
             END AS USO_COMUM
-      FROM TSI_PROCESSOS
-      WHERE UC = '1'
-        AND ID IS NOT NULL
-        AND D_E_L_E_T_ <> '*'
-      ORDER BY DATA_INCLUSAO DESC
+        FROM 
+            TSI_PROCESSOS P
+            LEFT JOIN TSI_TIPODOC T ON T.ID = P.ID_TIPODOC
+        WHERE 
+            P.UC = '1'
+            AND P.ID IS NOT NULL
+            AND P.D_E_L_E_T_ <> '*'
+        ORDER BY 
+            P.DATA_INCLUSAO DESC
     `);
 
-    // Garantir que descricao seja string
     const processos = result.rows.map(p => ({
       ...p,
       descricao: p.descricao ? String(p.descricao) : ''
     }));
 
-    res.json({ processos, departamento });
+    res.json({ processos, grupo });
 
   } catch (err) {
     console.error('[ERRO] ao buscar processos:', err);
